@@ -1,61 +1,205 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yazid - Portfolio</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yazid - Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <header class="site-header">
-        <div class="container">
-            <a href="#profile" class="brand">Yazid</a>
-            <nav>
-                <a href="#profile">Profile</a>
-            </nav>
-        </div>
-    </header>
 
-    <main>
-        <section class="hero" id="profile">
-            <div class="container hero-grid">
-                <div class="hero-identity">
-                    <p class="hero-kicker">Computer Science &middot; Universitas Indonesia</p>
-                    <h1>Yazid</h1>
-                </div>
-                <div class="hero-photo">
-                    <div class="photo-block"></div>
-                    <img class="avatar" src="/static/img/yazid.jpeg" alt="This is me">
-                </div>
-                <div class="hero-details">
-                    <p class="bio">An undergraduate student of Computer Science in Indonesia with a strong enthusiasm for IT and its management. I consider myself a confident and optimistic individual. Looking up for new knowledges and experiences further.</p>
-                    <dl class="meta-list">
-                        <div class="meta-row">
-                            <dt>NPM</dt>
-                            <dd>2506537064</dd>
-                        </div>
-                        <div class="meta-row">
-                            <dt>Program</dt>
-                            <dd>S1 Ilmu Komputer</dd>
-                        </div>
-                    </dl>
-                    <div class="social-links">
-                        <a href="https://github.com/yazidkhairul-tech" class="social-link">GitHub</a>
-                        <a href="https://www.linkedin.com/in/yazid-firmansyah-y211206/" class="social-link">LinkedIn</a>
-                        <a href="firmansyahyazid1@gmail.com" class="social-link">Email</a>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
+<header class="site-header">
+  <div class="container">
+    <a href="#profile" class="brand">Yazid</a>
+    <nav>
+      <a href="#profile">Profile</a>
+      <a href="#education">Education</a>
+      <a href="#experience">Experience</a>
+    </nav>
+  </div>
+</header>
 
-    <footer class="site-footer">
-        <div class="container">
-            <p>&copy; 2026 Yazid. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
+<main>
+  <section class="hero" id="profile">
+    <div class="container hero-grid">
+      <div class="hero-identity">
+        <p class="hero-kicker">Computer Science &middot; Universitas Indonesia</p>
+        <h1>Yazid</h1>
+      </div>
+      <div class="hero-photo">
+        <div class="photo-block"></div>
+        <img class="avatar" src="/static/img/yazid.jpeg" alt="This is me">
+      </div>
+      <div class="hero-details">
+        <p class="bio">An undergraduate student of Computer Science in Indonesia with a strong enthusiasm for IT and its management. I consider myself a confident and optimistic individual. Looking up for new knowledges and experiences further.</p>
+        <dl class="meta-list">
+          <div class="meta-row">
+            <dt>NPM</dt>
+            <dd>2506537064</dd>
+          </div>
+          <div class="meta-row">
+            <dt>Program</dt>
+            <dd>S1 Ilmu Komputer</dd>
+          </div>
+        </dl>
+        <div class="social-links">
+          <a href="https://github.com/yazidkhairul-tech" class="social-link">GitHub</a>
+          <a href="https://www.linkedin.com/in/yazid-firmansyah-y211206/" class="social-link">LinkedIn</a>
+          <a href="mailto:firmansyahyazid1@gmail.com" class="social-link">Email</a>
         </div>
-    </footer>
+      </div>
+    </div>
+  </section>
+
+  <section class="education" id="education">
+    <div class="container">
+      <div class="section-head">
+        <h2>Education</h2>
+        <p>Where I studied, and what I'm studying now.</p>
+      </div>
+
+      <div class="edu-grid">
+        <div class="edu-card">
+          <p class="edu-status">2022 – 2025</p>
+          <div class="edu-school">SMAN 61 Jakarta</div>
+          <p class="edu-program">Graduated</p>
+          <div class="edu-score" data-target="91.78">0</div>
+          <p class="edu-score-label">final average score, out of 100</p>
+        </div>
+        <div class="edu-card">
+          <p class="edu-status is-current">2025 – present</p>
+          <div class="edu-school">Universitas Indonesia</div>
+          <p class="edu-program">Computer Science</p>
+          <div class="edu-ongoing">
+            <span class="edu-dot"></span>
+            Currently studying
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="experience" id="experience">
+    <div class="container">
+      <div class="section-head">
+        <h2>Experience</h2>
+        <p>A few roles where I led teams and managed projects end to end.</p>
+      </div>
+
+      <div class="timeline">
+        <div class="timeline-track"></div>
+        <div class="timeline-fill" id="timelineFill"></div>
+
+        <div class="entry" data-year="2025">
+          <div class="entry-marker">25</div>
+          <span class="entry-year">2025</span>
+          <div class="entry-role">Project Management Internship</div>
+          <div class="entry-org">BEM Fasilkom UI</div>
+          <ul class="entry-points">
+            <li>Learned and applied project management tools in a real team setting</li>
+            <li>Held an IT project together with the team</li>
+          </ul>
+        </div>
+
+        <div class="entry" data-year="2024">
+          <div class="entry-marker">24</div>
+          <span class="entry-year">2024</span>
+          <div class="entry-role">Project Officer</div>
+          <div class="entry-org">SIXTORWS, SMAN 61 Jakarta</div>
+          <ul class="entry-points">
+            <li>Led the planning of an event with over 400 committee members in a structured, hierarchical workflow</li>
+            <li>Organized an event reaching 1,000+ participants across the Jabodetabek area</li>
+            <li>Managed partnerships with more than a dozen sponsors and supporting companies</li>
+          </ul>
+        </div>
+
+        <div class="entry" data-year="2023–2024">
+          <div class="entry-marker">23</div>
+          <span class="entry-year">2023 – 2024</span>
+          <div class="entry-role">Head of Sport Department</div>
+          <div class="entry-org">PKOSIS, SMAN 61 Jakarta</div>
+          <ul class="entry-points">
+            <li>Led 7 sports extracurriculars at SMAN 61 Jakarta</li>
+            <li>Ran routine coordination forums with every extracurricular head</li>
+          </ul>
+        </div>
+
+        <div class="entry" data-year="2023">
+          <div class="entry-marker">23</div>
+          <span class="entry-year">2023</span>
+          <div class="entry-role">Finance Manager</div>
+          <div class="entry-org">Brandschool, SMAN 61 Jakarta</div>
+          <ul class="entry-points">
+            <li>Managed merchandise finances valued in the millions of rupiah</li>
+            <li>Handled purchases and transactions for 788 students</li>
+            <li>Documented roughly 7 million rupiah in income using Excel</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p>&copy; 2026 Yazid. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
+  </div>
+</footer>
+
+<script>
+  const scoreEl = document.querySelector('.edu-score');
+  let scoreDone = false;
+
+  function animateScore(){
+    if(scoreDone) return;
+    const rect = scoreEl.getBoundingClientRect();
+    if(rect.top < window.innerHeight * 0.85){
+      scoreDone = true;
+      const target = parseFloat(scoreEl.dataset.target);
+      const duration = 900;
+      const start = performance.now();
+      function frame(now){
+        const t = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - t, 3);
+        scoreEl.textContent = (target * eased).toFixed(2);
+        if(t < 1) requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }
+  }
+
+  const entries = Array.from(document.querySelectorAll('.entry'));
+  const fill = document.getElementById('timelineFill');
+  const track = document.querySelector('.timeline');
+
+  function update(){
+    const rect = track.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const progressPx = Math.min(Math.max(vh * 0.7 - rect.top, 0), rect.height);
+    const pct = rect.height > 0 ? (progressPx / rect.height) * 100 : 0;
+    fill.style.height = pct + '%';
+
+    entries.forEach(entry => {
+      const r = entry.getBoundingClientRect();
+      if(r.top < vh * 0.75){
+        entry.classList.add('lit');
+      }
+    });
+  }
+
+  function onScroll(){
+    update();
+    animateScore();
+  }
+
+  window.addEventListener('scroll', onScroll, { passive:true });
+  window.addEventListener('resize', onScroll);
+  onScroll();
+</script>
+
 </body>
 </html>
