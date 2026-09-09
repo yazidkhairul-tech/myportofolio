@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ name }} - Portofolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<div class="bg-animate" aria-hidden="true">
+  <span class="blob blob-1"></span>
+  <span class="blob blob-2"></span>
+  <span class="blob blob-3"></span>
+</div>
+
+<header class="site-header">
+  <div class="container">
+    <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
+    <nav>
+        <a href="{% url 'main:show_main' %}">Profile</a>
+        <a href="{% url 'main:show_experience' %}">Experience</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+    <section class="experience-section" id="experience">
+        <div class="container">
+            <p class="section-kicker">Perjalanan saya sejauh ini</p>
+            <h1>Experience</h1>
+
+            <div class="experience-grid">
+                {% for experience in experience_list %}
+                    <article class="experience-card">
+                        <span class="experience-category">
+                            {{ experience.get_category_display }}
+                        </span>
+                        <h2>{{ experience.title }}</h2>
+                        <p class="experience-description">
+                            {{ experience.description }}
+                        </p>
+
+                        {% if experience.is_ongoing %}
+                            <p class="experience-status">Sedang berlangsung</p>
+                        {% else %}
+                            <p class="experience-status">Selesai</p>
+                        {% endif %}
+                    </article>
+                {% empty %}
+                    <p class="empty-state">
+                        Belum ada pengalaman yang ditambahkan.
+                    </p>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p>&copy; 2026 {{ name }}. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
+  </div>
+</footer>
+
+<script>
+  const scoreEl = document.querySelector('.edu-score');
+  let scoreDone = false;
+
+  function animateScore(){
+    if(scoreDone) return;
+    const rect = scoreEl.getBoundingClientRect();
+    if(rect.top < window.innerHeight * 0.85){
+      scoreDone = true;
+      const target = parseFloat(scoreEl.dataset.target);
+      const duration = 900;
+      const start = performance.now();
+      function frame(now){
+        const t = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - t, 3);
+        scoreEl.textContent = (target * eased).toFixed(2);
+        if(t < 1) requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }
+  }
+
+  const entries = Array.from(document.querySelectorAll('.entry'));
+  const fill = document.getElementById('timelineFill');
+  const track = document.querySelector('.timeline');
+
+  function update(){
+    const rect = track.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const progressPx = Math.min(Math.max(vh * 0.7 - rect.top, 0), rect.height);
+    const pct = rect.height > 0 ? (progressPx / rect.height) * 100 : 0;
+    fill.style.height = pct + '%';
+
+    entries.forEach(entry => {
+      const r = entry.getBoundingClientRect();
+      if(r.top < vh * 0.75){
+        entry.classList.add('lit');
+      }
+    });
+  }
+
+  function onScroll(){
+    update();
+    animateScore();
+  }
+
+  window.addEventListener('scroll', onScroll, { passive:true });
+  window.addEventListener('resize', onScroll);
+  onScroll();
+</script>
+
+</body>
+</html>
