@@ -24,3 +24,21 @@ class Experience(models.Model):
     @property
     def is_ongoing(self):
         return self.ended_at is None
+
+class Education(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    institution_name = models.CharField(max_length=255)
+    program = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    started_at = models.DateTimeField()
+    ended_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['-started_at']
+
+    def __str__(self):
+        return f"{self.program} - {self.institution_name}"
+
+    @property
+    def is_ongoing(self):
+        return self.ended_at is None
