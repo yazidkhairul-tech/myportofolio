@@ -331,6 +331,12 @@
     color:var(--gold);
     margin-bottom:14px;
   }
+  .entry-status{
+    font-size:13px;
+    font-weight:600;
+    color:var(--paper-dim);
+    margin:0 0 10px;
+  }
   .entry-points{
     margin:0;
     padding-left:18px;

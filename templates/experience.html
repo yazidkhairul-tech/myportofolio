@@ -48,6 +48,11 @@
             </span>
             <div class="entry-role">{{ experience.title }}</div>
             <div class="entry-org">{{ experience.get_category_display }}</div>
+            {% if experience.is_ongoing %}
+              <p class="entry-status">Sedang berlangsung</p>
+            {% else %}
+              <p class="entry-status">Selesai</p>
+            {% endif %}
             <ul class="entry-points">
               <li>{{ experience.description }}</li>
             </ul>
