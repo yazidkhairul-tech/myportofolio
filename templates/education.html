@@ -48,6 +48,10 @@
             {% if education.description %}
               <p class="edu-description">{{ education.description }}</p>
             {% endif %}
+            {% if education.score %}
+              <div class="edu-score" data-target="{{ education.score }}">0</div>
+              <p class="edu-score-label">final average score, out of 100</p>
+            {% endif %}
             {% if education.is_ongoing %}
               <div class="edu-ongoing">
                 <span class="edu-dot"></span>
@@ -68,6 +72,35 @@
     <p>&copy; 2026 {{ name }}. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
   </div>
 </footer>
+
+<script>
+  const scoreEls = document.querySelectorAll('.edu-score');
+  const scoreDone = new WeakSet();
+
+  function animateScores(){
+    scoreEls.forEach(scoreEl => {
+      if(scoreDone.has(scoreEl)) return;
+      const rect = scoreEl.getBoundingClientRect();
+      if(rect.top < window.innerHeight * 0.85){
+        scoreDone.add(scoreEl);
+        const target = parseFloat(scoreEl.dataset.target);
+        const duration = 900;
+        const start = performance.now();
+        function frame(now){
+          const t = Math.min((now - start) / duration, 1);
+          const eased = 1 - Math.pow(1 - t, 3);
+          scoreEl.textContent = (target * eased).toFixed(2);
+          if(t < 1) requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+      }
+    });
+  }
+
+  window.addEventListener('scroll', animateScores, { passive:true });
+  window.addEventListener('resize', animateScores);
+  animateScores();
+</script>
 
 </body>
 </html>

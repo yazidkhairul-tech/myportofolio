@@ -10,7 +10,7 @@ class Experience(models.Model):
         ('full-time', 'Full-Time'),
         ('freelance', 'Freelance'),
     ]
-    
+ 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
     description = models.TextField()
@@ -18,27 +18,30 @@ class Experience(models.Model):
     thumbnail = models.URLField(blank=True, null=True)
     started_at = models.DateTimeField(auto_now_add=True)
     ended_at = models.DateTimeField(blank=True, null=True)
+ 
     def __str__(self):
         return self.title
-    
+ 
     @property
     def is_ongoing(self):
         return self.ended_at is None
-
+ 
+ 
 class Education(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     institution_name = models.CharField(max_length=255)
     program = models.CharField(max_length=255)
     description = models.TextField(blank=True)
+    score = models.FloatField(blank=True, null=True)
     started_at = models.DateTimeField()
     ended_at = models.DateTimeField(blank=True, null=True)
-
+ 
     class Meta:
         ordering = ['-started_at']
-
+ 
     def __str__(self):
         return f"{self.program} - {self.institution_name}"
-
+ 
     @property
     def is_ongoing(self):
         return self.ended_at is None

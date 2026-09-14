@@ -21,44 +21,48 @@
   <div class="container">
     <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
     <nav>
-        <a href="{% url 'main:show_main' %}">Profile</a>
-        <a href="{% url 'main:show_experience' %}">Experience</a>
-        <a href="{% url 'main:show_education' %}">Education</a>
+      <a href="{% url 'main:show_main' %}">Profile</a>
+      <a href="{% url 'main:show_experience' %}">Experience</a>
+      <a href="{% url 'main:show_education' %}">Education</a>
     </nav>
   </div>
 </header>
 
 <main>
-    <section class="experience-section" id="experience">
-        <div class="container">
-            <p class="section-kicker">Perjalanan saya sejauh ini</p>
-            <h1>Experience</h1>
+  <section class="experience" id="experience">
+    <div class="container">
+      <div class="section-head">
+        <h2>Experience</h2>
+        <p>A few roles where I led teams and managed projects end to end.</p>
+      </div>
 
-            <div class="experience-grid">
-                {% for experience in experience_list %}
-                    <article class="experience-card">
-                        <span class="experience-category">
-                            {{ experience.get_category_display }}
-                        </span>
-                        <h2>{{ experience.title }}</h2>
-                        <p class="experience-description">
-                            {{ experience.description }}
-                        </p>
+      <div class="timeline">
+        <div class="timeline-track"></div>
+        <div class="timeline-fill" id="timelineFill"></div>
 
-                        {% if experience.is_ongoing %}
-                            <p class="experience-status">Sedang berlangsung</p>
-                        {% else %}
-                            <p class="experience-status">Selesai</p>
-                        {% endif %}
-                    </article>
-                {% empty %}
-                    <p class="empty-state">
-                        Belum ada pengalaman yang ditambahkan.
-                    </p>
-                {% endfor %}
-            </div>
-        </div>
-    </section>
+        {% for experience in experience_list %}
+          <div class="entry" data-year="{{ experience.started_at|date:'Y' }}">
+            <div class="entry-marker">{{ experience.started_at|date:'y' }}</div>
+            <span class="entry-year">
+              {{ experience.started_at|date:'Y' }}{% if experience.is_ongoing %} &ndash; present{% endif %}
+            </span>
+            <div class="entry-role">{{ experience.title }}</div>
+            <div class="entry-org">{{ experience.get_category_display }}</div>
+            {% if experience.is_ongoing %}
+              <p class="entry-status">Sedang berlangsung</p>
+            {% else %}
+              <p class="entry-status">Selesai</p>
+            {% endif %}
+            <ul class="entry-points">
+              <li>{{ experience.description }}</li>
+            </ul>
+          </div>
+        {% empty %}
+          <p class="empty-state">Belum ada pengalaman yang ditambahkan.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
 </main>
 
 <footer class="site-footer">
@@ -68,37 +72,17 @@
 </footer>
 
 <script>
-  const scoreEl = document.querySelector('.edu-score');
-  let scoreDone = false;
-
-  function animateScore(){
-    if(scoreDone) return;
-    const rect = scoreEl.getBoundingClientRect();
-    if(rect.top < window.innerHeight * 0.85){
-      scoreDone = true;
-      const target = parseFloat(scoreEl.dataset.target);
-      const duration = 900;
-      const start = performance.now();
-      function frame(now){
-        const t = Math.min((now - start) / duration, 1);
-        const eased = 1 - Math.pow(1 - t, 3);
-        scoreEl.textContent = (target * eased).toFixed(2);
-        if(t < 1) requestAnimationFrame(frame);
-      }
-      requestAnimationFrame(frame);
-    }
-  }
-
   const entries = Array.from(document.querySelectorAll('.entry'));
   const fill = document.getElementById('timelineFill');
   const track = document.querySelector('.timeline');
 
   function update(){
+    if(!track) return;
     const rect = track.getBoundingClientRect();
     const vh = window.innerHeight;
     const progressPx = Math.min(Math.max(vh * 0.7 - rect.top, 0), rect.height);
     const pct = rect.height > 0 ? (progressPx / rect.height) * 100 : 0;
-    fill.style.height = pct + '%';
+    if(fill) fill.style.height = pct + '%';
 
     entries.forEach(entry => {
       const r = entry.getBoundingClientRect();
@@ -108,14 +92,9 @@
     });
   }
 
-  function onScroll(){
-    update();
-    animateScore();
-  }
-
-  window.addEventListener('scroll', onScroll, { passive:true });
-  window.addEventListener('resize', onScroll);
-  onScroll();
+  window.addEventListener('scroll', update, { passive:true });
+  window.addEventListener('resize', update);
+  update();
 </script>
 
 </body>

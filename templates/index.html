@@ -68,22 +68,31 @@
       </div>
 
       <div class="edu-grid">
-        <div class="edu-card">
-          <p class="edu-status">2022 – 2025</p>
-          <div class="edu-school">SMAN 61 Jakarta</div>
-          <p class="edu-program">Graduated</p>
-          <div class="edu-score" data-target="91.78">0</div>
-          <p class="edu-score-label">final average score, out of 100</p>
-        </div>
-        <div class="edu-card">
-          <p class="edu-status is-current">2025 – present</p>
-          <div class="edu-school">Universitas Indonesia</div>
-          <p class="edu-program">Computer Science</p>
-          <div class="edu-ongoing">
-            <span class="edu-dot"></span>
-            Currently studying
+        {% for education in education_list %}
+          <div class="edu-card">
+            <p class="edu-status{% if education.is_ongoing %} is-current{% endif %}">
+              {{ education.started_at|date:"Y" }} &ndash;
+              {% if education.is_ongoing %}present{% else %}{{ education.ended_at|date:"Y" }}{% endif %}
+            </p>
+            <div class="edu-school">{{ education.institution_name }}</div>
+            <p class="edu-program">{{ education.program }}</p>
+            {% if education.description %}
+              <p class="edu-description">{{ education.description }}</p>
+            {% endif %}
+            {% if education.score %}
+              <div class="edu-score" data-target="{{ education.score }}">0</div>
+              <p class="edu-score-label">final average score, out of 100</p>
+            {% endif %}
+            {% if education.is_ongoing %}
+              <div class="edu-ongoing">
+                <span class="edu-dot"></span>
+                Currently studying
+              </div>
+            {% endif %}
           </div>
-        </div>
+        {% empty %}
+          <p class="empty-state">Belum ada riwayat pendidikan yang ditambahkan.</p>
+        {% endfor %}
       </div>
     </div>
   </section>
@@ -157,25 +166,27 @@
 </footer>
 
 <script>
-  const scoreEl = document.querySelector('.edu-score');
-  let scoreDone = false;
+  const scoreEls = document.querySelectorAll('.edu-score');
+  const scoreDone = new WeakSet();
 
   function animateScore(){
-    if(scoreDone) return;
-    const rect = scoreEl.getBoundingClientRect();
-    if(rect.top < window.innerHeight * 0.85){
-      scoreDone = true;
-      const target = parseFloat(scoreEl.dataset.target);
-      const duration = 900;
-      const start = performance.now();
-      function frame(now){
-        const t = Math.min((now - start) / duration, 1);
-        const eased = 1 - Math.pow(1 - t, 3);
-        scoreEl.textContent = (target * eased).toFixed(2);
-        if(t < 1) requestAnimationFrame(frame);
+    scoreEls.forEach(scoreEl => {
+      if(scoreDone.has(scoreEl)) return;
+      const rect = scoreEl.getBoundingClientRect();
+      if(rect.top < window.innerHeight * 0.85){
+        scoreDone.add(scoreEl);
+        const target = parseFloat(scoreEl.dataset.target);
+        const duration = 900;
+        const start = performance.now();
+        function frame(now){
+          const t = Math.min((now - start) / duration, 1);
+          const eased = 1 - Math.pow(1 - t, 3);
+          scoreEl.textContent = (target * eased).toFixed(2);
+          if(t < 1) requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
       }
-      requestAnimationFrame(frame);
-    }
+    });
   }
 
   const entries = Array.from(document.querySelectorAll('.entry'));
