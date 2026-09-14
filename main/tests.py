@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from main.models import Experience
+from main.models import Education
 
 
 class MainTest(TestCase):
@@ -56,3 +57,35 @@ class MainTest(TestCase):
         self.assertFalse(self.experience.is_ongoing)
         self.assertContains(response, "Selesai")
         self.assertNotContains(response, "Sedang berlangsung")
+
+class EducationTest(TestCase):
+    def setUp(self):
+        self.url = reverse("main:show_education")
+
+    def test_url_is_accessible_and_uses_correct_template(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "education.html")
+
+    def test_education_data_appears_on_page_when_data_exists(self):
+        Education.objects.create(
+            institution_name="Universitas Indonesia",
+            program="S1 Ilmu Komputer",
+            description="Belajar dasar-dasar ilmu komputer.",
+            started_at=timezone.now(),
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertContains(response, "Universitas Indonesia")
+        self.assertContains(response, "S1 Ilmu Komputer")
+
+    def test_page_shows_empty_state_message_when_no_data(self):
+        self.assertEqual(Education.objects.count(), 0)
+
+        response = self.client.get(self.url)
+
+        self.assertContains(
+            response, "Belum ada riwayat pendidikan yang ditambahkan."
+        )
+
