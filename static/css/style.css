@@ -1,4 +1,4 @@
-  :root{
+:root{
     --ink:#161923;
     --ink-soft:#1F2330;
     --paper:#ECEAE2;
@@ -16,7 +16,7 @@
     font-family:'Inter', sans-serif;
     -webkit-font-smoothing:antialiased;
   }
-
+ 
   /* ---------- animated background ---------- */
   .bg-animate{
     position:fixed;
@@ -75,7 +75,7 @@
     margin:0 auto;
     padding:0 32px;
   }
-
+ 
   /* ---------- header ---------- */
   .site-header{
     padding:28px 0;
@@ -100,7 +100,7 @@
     margin-left:28px;
   }
   nav a:hover{ color:var(--gold); }
-
+ 
   /* ---------- hero ---------- */
   .hero{ padding:88px 0 72px; }
   .hero-grid{
@@ -116,7 +116,7 @@
   .hero-identity{ grid-area:identity; }
   .hero-photo{ grid-area:photo; }
   .hero-details{ grid-area:details; max-width:520px; }
-
+ 
   .hero-kicker{
     color:var(--gold);
     font-size:15px;
@@ -168,7 +168,7 @@
     padding-bottom:2px;
   }
   .social-link:hover{ color:var(--gold); }
-
+ 
   /* ---------- education section ---------- */
   .education{ padding:40px 0 88px; }
   .edu-grid{
@@ -197,6 +197,12 @@
     font-size:14px;
     color:var(--paper-dim);
     margin-bottom:28px;
+  }
+  .edu-description{
+    font-size:13.5px;
+    color:var(--paper-dim);
+    line-height:1.6;
+    margin-bottom:16px;
   }
   .edu-score{
     font-family:'Space Grotesk', sans-serif;
@@ -228,14 +234,14 @@
     0%,100%{ opacity:1; }
     50%{ opacity:0.35; }
   }
-
+ 
   @media (max-width:640px){
     .edu-grid{ grid-template-columns:1fr; }
   }
   @media (prefers-reduced-motion: reduce){
     .edu-dot{ animation:none; }
   }
-
+ 
   /* ---------- experience section ---------- */
   .experience{ padding:40px 0 100px; }
   .section-head{
@@ -257,7 +263,7 @@
     max-width:220px;
     text-align:right;
   }
-
+ 
   .timeline{
     position:relative;
     padding-left:56px;
@@ -279,13 +285,13 @@
     background:var(--gold);
     transition:height 0.25s linear;
   }
-
+ 
   .entry{
     position:relative;
     padding-bottom:52px;
   }
   .entry:last-child{ padding-bottom:0; }
-
+ 
   .entry-marker{
     position:absolute;
     left:-56px;
@@ -308,7 +314,7 @@
     color:var(--gold);
     background:var(--ink-soft);
   }
-
+ 
   .entry-year{
     font-size:13px;
     color:var(--paper-dim);
@@ -333,14 +339,21 @@
     line-height:1.7;
   }
   .entry-points li{ margin-bottom:4px; }
-
+ 
   .entry{
     opacity:0.35;
     transform:translateX(-4px);
     transition:opacity 0.5s ease, transform 0.5s ease;
   }
   .entry.lit{ opacity:1; transform:translateX(0); }
-
+ 
+  /* ---------- shared empty state ---------- */
+  .empty-state{
+    color:var(--paper-dim);
+    font-size:14px;
+    padding:24px 0;
+  }
+ 
   @media (max-width:640px){
     .hero-grid{
       grid-template-columns:1fr;
@@ -350,68 +363,14 @@
     .section-head{ flex-direction:column; align-items:flex-start; gap:8px; }
     .section-head p{ text-align:left; }
   }
-
+ 
   @media (prefers-reduced-motion: reduce){
     .entry, .entry-marker, .timeline-fill{ transition:none; opacity:1; transform:none; }
   }
-
+ 
   .site-footer{
     border-top:1px solid var(--line);
     padding:24px 0;
     color:var(--paper-dim);
     font-size:13px;
   }
-
-  .experience-section {
-    padding: 4rem 0;
-    border-top: 1px solid var(--line);
-}
-
-.section-kicker {
-    color: var(--accent-dark);
-    font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.experience-section h1 {
-    margin: 0.4rem 0 1.5rem;
-    font-size: 2rem;
-}
-
-.experience-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1rem;
-}
-
-.experience-card {
-    padding: 1.25rem;
-    background-color: #fff;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-}
-
-.experience-category {
-    color: var(--accent-dark);
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-}
-
-.experience-card h2 {
-    margin: 0.5rem 0;
-    font-size: 1.25rem;
-}
-
-.experience-description,
-.empty-state {
-    color: var(--text-muted);
-}
-
-.experience-status {
-    margin-top: 1rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
