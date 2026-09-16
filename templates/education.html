@@ -1,106 +1,61 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{ name }} - Portofolio</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-
-<div class="bg-animate" aria-hidden="true">
-  <span class="blob blob-1"></span>
-  <span class="blob blob-2"></span>
-  <span class="blob blob-3"></span>
-</div>
-
-<header class="site-header">
-  <div class="container">
-    <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
-    <nav>
-      <a href="{% url 'main:show_main' %}">Profile</a>
-      <a href="{% url 'main:show_experience' %}">Experience</a>
-      <a href="{% url 'main:show_education' %}">Education</a>
-    </nav>
-  </div>
-</header>
-
-<main>
-  <section class="education" id="education">
-    <div class="container">
-      <div class="section-head">
-        <h2>Education</h2>
-        <p>Where I studied, and what I'm studying now.</p>
-      </div>
-
-      <div class="edu-grid">
-        {% for education in education_list %}
-          <div class="edu-card">
-            <p class="edu-status{% if education.is_ongoing %} is-current{% endif %}">
-              {{ education.started_at|date:"Y" }} &ndash;
-              {% if education.is_ongoing %}present{% else %}{{ education.ended_at|date:"Y" }}{% endif %}
-            </p>
-            <div class="edu-school">{{ education.institution_name }}</div>
-            <p class="edu-program">{{ education.program }}</p>
-            {% if education.description %}
-              <p class="edu-description">{{ education.description }}</p>
-            {% endif %}
-            {% if education.score %}
-              <div class="edu-score" data-target="{{ education.score }}">0</div>
-              <p class="edu-score-label">final average score, out of 100</p>
-            {% endif %}
-            {% if education.is_ongoing %}
-              <div class="edu-ongoing">
-                <span class="edu-dot"></span>
-                Currently studying
-              </div>
-            {% endif %}
-          </div>
-        {% empty %}
-          <p class="empty-state">Belum ada riwayat pendidikan yang ditambahkan.</p>
-        {% endfor %}
-      </div>
-    </div>
-  </section>
-</main>
-
-<footer class="site-footer">
-  <div class="container">
-    <p>&copy; 2026 {{ name }}. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
-  </div>
-</footer>
-
-<script>
-  const scoreEls = document.querySelectorAll('.edu-score');
-  const scoreDone = new WeakSet();
-
-  function animateScores(){
-    scoreEls.forEach(scoreEl => {
-      if(scoreDone.has(scoreEl)) return;
-      const rect = scoreEl.getBoundingClientRect();
-      if(rect.top < window.innerHeight * 0.85){
-        scoreDone.add(scoreEl);
-        const target = parseFloat(scoreEl.dataset.target);
-        const duration = 900;
-        const start = performance.now();
-        function frame(now){
-          const t = Math.min((now - start) / duration, 1);
-          const eased = 1 - Math.pow(1 - t, 3);
-          scoreEl.textContent = (target * eased).toFixed(2);
-          if(t < 1) requestAnimationFrame(frame);
-        }
-        requestAnimationFrame(frame);
-      }
-    });
-  }
-
-  window.addEventListener('scroll', animateScores, { passive:true });
-  window.addEventListener('resize', animateScores);
-  animateScores();
-</script>
-
-</body>
-</html>
+{% extends "base.html" %}
+{% block meta %}
+    <title>Education - {{ name }}</title>
+{% endblock meta %}
+{% block content %}
+    <main>
+        <section class="experience-section" id="education">
+            <div class="container">
+                <p class="section-kicker">Riwayat pendidikan saya</p>
+                <div class="project-header">
+                    <h1>Education</h1>
+                    <a href="{% url 'main:create_education' %}"
+                       class="button project-add-button">
+                        <span aria-hidden="true">+</span>
+                        Tambah Pendidikan
+                    </a>
+                </div>
+                <form method="get"
+                      action="{% url 'main:show_education' %}"
+                      class="project-search">
+                    <input type="search"
+                           name="institution_name"
+                           value="{{ query }}"
+                           placeholder="Cari berdasarkan nama institusi"
+                           class="project-search__input"
+                           aria-label="Cari berdasarkan nama institusi">
+                    <button type="submit" class="button">Cari</button>
+                </form>
+                <div class="experience-grid project-grid">
+                    {% for education in education_list %}
+                        <article class="experience-card">
+                            <h2>{{ education.institution_name }}</h2>
+                            <span class="experience-category">{{ education.program }}</span>
+                            <p class="experience-description">
+                                {{ education.started_at|date:"Y" }} &ndash;
+                                {% if education.is_ongoing %}present{% else %}{{ education.ended_at|date:"Y" }}{% endif %}
+                            </p>
+                            {% if education.description %}
+                                <p class="experience-description">{{ education.description }}</p>
+                            {% endif %}
+                            {% if education.score %}
+                                <p class="experience-description">Nilai: {{ education.score }}</p>
+                            {% endif %}
+                            <div class="project-card-actions">
+                                <div class="project-actions">
+                                    {% include "components/education_delete_modal.html" with education=education %}
+                                </div>
+                            </div>
+                        </article>
+                    {% empty %}
+                        {% if query %}
+                            <p class="empty-state">Tidak ada riwayat pendidikan dengan nama institusi tersebut.</p>
+                        {% else %}
+                            <p class="empty-state">Belum ada riwayat pendidikan yang ditambahkan.</p>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    </main>
+{% endblock content %}
