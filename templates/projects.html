@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block meta %}
+    <title>Projects - {{ name }}</title>
+{% endblock meta %}
+{% block content %}
+    <main>
+        <section class="projects" id="projects">
+            <div class="container">
+                <p class="section-kicker">Proyek yang pernah saya kerjakan</p>
+
+                <div class="project-header">
+                    <h1>Projects</h1>
+                    <a href="{% url 'main:create_project' %}"
+                       class="button project-add-button">
+                        <span aria-hidden="true">+</span>
+                        Tambah Proyek
+                    </a>
+                </div>
+
+                <form method="get"
+                      action="{% url 'main:show_projects' %}"
+                      class="project-search">
+                    <input type="search"
+                           name="title"
+                           value="{{ query }}"
+                           placeholder="Cari berdasarkan nama proyek"
+                           class="project-search__input"
+                           aria-label="Cari berdasarkan nama proyek">
+                    <button type="submit" class="button">Cari</button>
+                </form>
+
+                <div class="project-list-grid" id="projectGrid">
+                    {% for project in project_list %}
+                        <article class="project-card{% if project.is_featured %} project-card--featured{% endif %}">
+                            {% if project.is_featured %}
+                                <span class="project-badge">Featured</span>
+                            {% endif %}
+
+                            {% if project.thumbnail %}
+                                <img src="{{ project.thumbnail.url }}"
+                                     alt="Tampilan proyek {{ project.title }}"
+                                     class="project-image">
+                            {% endif %}
+
+                            <h2 class="project-title">{{ project.title }}</h2>
+                            <p class="project-meta">
+                                {{ project.started_at|date:"Y" }} &ndash;
+                                {% if project.is_ongoing %}present{% else %}{{ project.ended_at|date:"Y" }}{% endif %}
+                            </p>
+
+                            {% if project.description %}
+                                <p class="project-description">{{ project.description }}</p>
+                            {% endif %}
+
+                            {% if project.tech_list %}
+                                <ul class="tech-tags">
+                                    {% for tech in project.tech_list %}
+                                        <li class="tech-tag">{{ tech }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+
+                            <div class="project-card-actions">
+                                {% if project.project_url or project.source_url %}
+                                    <div class="project-links">
+                                        {% if project.project_url %}
+                                            <a href="{{ project.project_url }}"
+                                               target="_blank" rel="noopener"
+                                               class="social-link">Live Demo</a>
+                                        {% endif %}
+                                        {% if project.source_url %}
+                                            <a href="{{ project.source_url }}"
+                                               target="_blank" rel="noopener"
+                                               class="social-link">Source</a>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                                <div class="project-actions">
+                                    <a href="{% url 'main:update_project' project.id %}"
+                                       class="button button-secondary">Edit</a>
+                                    {% include "components/project_delete_modal.html" with project=project %}
+                                </div>
+                            </div>
+                        </article>
+                    {% empty %}
+                        {% if query %}
+                            <p class="empty-state">Tidak ada proyek dengan nama tersebut.</p>
+                        {% else %}
+                            <p class="empty-state">Belum ada proyek yang ditambahkan.</p>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+    (function () {
+        // ---- konfigurasi ----
+        const JSON_URL = "{% url 'main:get_project_json' %}";
+        const EDIT_URL_TEMPLATE = "{% url 'main:update_project' 0 %}".replace("0", "__ID__");
+        const searchForm = document.querySelector(".project-search");
+        const searchInput = searchForm ? searchForm.querySelector('input[name="title"]') : null;
+        const grid = document.getElementById("projectGrid");
+
+        if (!searchForm || !grid) return;
+
+        function escapeHtml(str) {
+            const div = document.createElement("div");
+            div.textContent = str ?? "";
+            return div.innerHTML;
+        }
+
+        function yearOf(dateStr) {
+            return dateStr ? new Date(dateStr).getFullYear() : "";
+        }
+
+        // Bangun 1 kartu proyek dari hasil deserialisasi JSON.
+        // Field seperti is_ongoing / tech_list tidak ikut ter-serialize
+        // (itu property/method di model, bukan kolom DB), jadi dihitung ulang di sini.
+        function cardHtml(item) {
+            const f = item.fields;
+            const isOngoing = !f.ended_at;
+            const techList = (f.tech_stack || "")
+                .split(",")
+                .map((t) => t.trim())
+                .filter(Boolean);
+
+            const badge = f.is_featured ? '<span class="project-badge">Featured</span>' : "";
+            const thumb = f.thumbnail
+                ? `<img src="/media/${f.thumbnail}" alt="Tampilan proyek ${escapeHtml(f.title)}" class="project-image">`
+                : "";
+            const desc = f.description
+                ? `<p class="project-description">${escapeHtml(f.description)}</p>`
+                : "";
+            const tags = techList.length
+                ? `<ul class="tech-tags">${techList.map((t) => `<li class="tech-tag">${escapeHtml(t)}</li>`).join("")}</ul>`
+                : "";
+            const links = (f.project_url || f.source_url)
+                ? `<div class="project-links">
+                        ${f.project_url ? `<a href="${f.project_url}" target="_blank" rel="noopener" class="social-link">Live Demo</a>` : ""}
+                        ${f.source_url ? `<a href="${f.source_url}" target="_blank" rel="noopener" class="social-link">Source</a>` : ""}
+                   </div>`
+                : "";
+            const editUrl = EDIT_URL_TEMPLATE.replace("__ID__", item.pk);
+
+            return `
+                <article class="project-card${f.is_featured ? " project-card--featured" : ""}">
+                    ${badge}
+                    ${thumb}
+                    <h2 class="project-title">${escapeHtml(f.title)}</h2>
+                    <p class="project-meta">${yearOf(f.started_at)} &ndash; ${isOngoing ? "present" : yearOf(f.ended_at)}</p>
+                    ${desc}
+                    ${tags}
+                    <div class="project-card-actions">
+                        ${links}
+                        <div class="project-actions">
+                            <a href="${editUrl}" class="button button-secondary">Edit</a>
+                        </div>
+                    </div>
+                </article>
+            `;
+        }
+
+        function render(items) {
+            if (!items.length) {
+                grid.innerHTML = '<p class="empty-state">Tidak ada proyek dengan nama tersebut.</p>';
+                return;
+            }
+            grid.innerHTML = items.map(cardHtml).join("");
+        }
+
+        async function fetchAndRender(query) {
+            const url = new URL(JSON_URL, window.location.origin);
+            if (query) url.searchParams.set("q", query);
+
+            const response = await fetch(url);
+            const rawText = await response.text();   // ambil string JSON mentah dari server
+            const data = JSON.parse(rawText);         // deserialisasi: string JSON -> array object JS
+            render(data);
+        }
+
+        searchForm.addEventListener("submit", function (e) {
+            e.preventDefault();
+            const query = searchInput ? searchInput.value.trim() : "";
+
+            const newUrl = new URL(window.location.href);
+            if (query) newUrl.searchParams.set("title", query);
+            else newUrl.searchParams.delete("title");
+            window.history.pushState({}, "", newUrl);
+
+            fetchAndRender(query);
+        });
+    })();
+    </script>
+{% endblock content %}

@@ -150,3 +150,6 @@ MAILERS = {
 }
 
 CSRF_TRUSTED_ORIGINS = ["https://yazid-khairul-myporto.pws.cs.ui.ac.id/"]
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"

@@ -1,4 +1,5 @@
 from django.forms import (
+    DateInput,
     ModelForm,
     TextInput,
     Textarea,
@@ -6,7 +7,7 @@ from django.forms import (
     NumberInput,
 )
 
-from main.models import Education
+from main.models import Education, Project
 
 class EducationForm(ModelForm):
     class Meta:
@@ -71,3 +72,48 @@ class EducationForm(ModelForm):
         self.fields["ended_at"].required = False
         self.fields["score"].required = False
         self.fields["description"].required = False
+
+class ProjectForm(ModelForm):
+    class Meta:
+        model = Project
+        fields = [
+            "title",
+            "description",
+            "tech_stack",
+            "thumbnail",
+            "project_url",
+            "source_url",
+            "started_at",
+            "is_ongoing",
+            "ended_at",
+            "is_featured",
+        ]
+        widgets = {
+            "description": Textarea(attrs={"rows": 4}),
+            "started_at": DateInput(attrs={"type": "date"}),
+            "ended_at": DateInput(attrs={"type": "date"}),
+        }
+        labels = {
+            "title": "Nama Proyek",
+            "description": "Deskripsi",
+            "tech_stack": "Tech Stack",
+            "thumbnail": "Gambar/Screenshot",
+            "project_url": "Link Demo",
+            "source_url": "Link Source Code",
+            "started_at": "Mulai Dikerjakan",
+            "is_ongoing": "Masih Berjalan",
+            "ended_at": "Selesai Dikerjakan",
+            "is_featured": "Tandai sebagai Featured",
+        }
+ 
+    def clean(self):
+        cleaned_data = super().clean()
+        is_ongoing = cleaned_data.get("is_ongoing")
+        ended_at = cleaned_data.get("ended_at")
+ 
+        if not is_ongoing and not ended_at:
+            self.add_error(
+                "ended_at",
+                "Isi tanggal selesai, atau centang 'Masih Berjalan' jika proyek belum selesai.",
+            )
+        return cleaned_data

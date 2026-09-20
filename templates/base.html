@@ -11,6 +11,11 @@
     {% block meta %} {% endblock meta %}
 </head>
 <body>
+    <div class="bg-animate" aria-hidden="true">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
     <header class="site-header">
     <div class="container">
         <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
@@ -18,9 +23,19 @@
             <a href="{% url 'main:show_main' %}">Profile</a>
             <a href="{% url 'main:show_experience' %}">Experience</a>
             <a href="{% url 'main:show_education' %}">Education</a>
+            <a href="{% url 'main:show_projects' %}">Projects</a>
         </nav>
     </div>
   </header>
+  {% if messages %}
+    <div class="container">
+        <ul class="messages">
+            {% for message in messages %}
+                <li class="message message--{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+  {% endif %}
   {% block content %} {% endblock content %}
 
   <footer class="site-footer">

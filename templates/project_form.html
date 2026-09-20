@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block meta %}
+    <title>{% if project %}Edit Proyek{% else %}Tambah Proyek{% endif %} - {{ name }}</title>
+{% endblock meta %}
+{% block content %}
+    <main>
+        <section class="projects" id="project-form">
+            <div class="container">
+                <p class="section-kicker">{% if project %}Ubah proyek{% else %}Proyek baru{% endif %}</p>
+                <h1>{% if project %}Edit Proyek{% else %}Tambah Proyek{% endif %}</h1>
+
+                <form method="post" enctype="multipart/form-data" class="project-form">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="form-group">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <p class="form-hint">{{ field.help_text }}</p>
+                            {% endif %}
+                            {% for error in field.errors %}
+                                <p class="form-error">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+
+                    <div class="project-form-actions">
+                        <a href="{% url 'main:show_projects' %}" class="button button-secondary">Batal</a>
+                        <button type="submit" class="button">
+                            {% if project %}Simpan Perubahan{% else %}Simpan Proyek{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+{% endblock content %}
