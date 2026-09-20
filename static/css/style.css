@@ -348,6 +348,39 @@
   }
   .entry-points li{ margin-bottom:4px; }
  
+  .entry-description{
+    font-size:13.5px;
+    color:var(--paper-dim);
+    line-height:1.6;
+    margin:0 0 12px;
+  }
+ 
+  .entry .project-card-actions{
+    margin-top:14px;
+  }
+  .entry .project-actions{
+    margin-top:0;
+  }
+ 
+  .entry .edu-ongoing{
+    margin-top:4px;
+    margin-bottom:12px;
+  }
+ 
+  /* ---------- section kicker (used on standalone list pages) ---------- */
+  .section-kicker{
+    color:var(--gold);
+    font-size:15px;
+    margin:0 0 10px;
+  }
+ 
+  /* ---------- empty state variant used inside a timeline ---------- */
+  .empty-state--timeline{
+    border-left:1px solid var(--gold);
+    padding:6px 0 6px 20px;
+    margin-left:2px;
+  }
+ 
   .entry{
     opacity:0.35;
     transform:translateX(-4px);
@@ -375,6 +408,123 @@
   @media (prefers-reduced-motion: reduce){
     .entry, .entry-marker, .timeline-fill{ transition:none; opacity:1; transform:none; }
   }
+ 
+  /* ---------- projects section ---------- */
+  .projects{ padding:40px 0 100px; }
+ 
+  .project-list-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:24px;
+  }
+ 
+  .project-card{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    background:var(--ink-soft);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:24px;
+    transition:border-color 0.25s ease;
+  }
+  .project-card--featured{
+    border-color:var(--gold);
+  }
+ 
+  .project-badge{
+    position:absolute;
+    top:16px;
+    right:16px;
+    background:var(--gold);
+    color:var(--ink);
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    padding:4px 10px;
+    border-radius:999px;
+    z-index:1;
+  }
+ 
+  .project-title{
+    font-size:20px;
+    font-weight:700;
+    margin-bottom:4px;
+  }
+  .project-meta{
+    font-size:13px;
+    color:var(--paper-dim);
+    margin:0 0 14px;
+  }
+  .project-description{
+    font-size:13.5px;
+    color:var(--paper-dim);
+    line-height:1.6;
+    margin:0 0 14px;
+  }
+ 
+  .tech-tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin:0 0 16px;
+    padding:0;
+    list-style:none;
+  }
+  .tech-tag{
+    font-size:12px;
+    color:var(--paper-dim);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:4px 10px;
+  }
+ 
+  .project-links{
+    display:flex;
+    gap:18px;
+    margin-bottom:4px;
+  }
+ 
+  .project-form-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:0.75rem;
+    margin-top:1.5rem;
+  }
+  .form-hint{
+    font-size:0.8rem;
+    color:var(--paper-dim);
+    margin-top:0.35rem;
+  }
+ 
+  @media (max-width:640px){
+    .project-list-grid{ grid-template-columns:1fr; }
+    .project-form-actions{ flex-direction:column-reverse; }
+    .project-form-actions .button{ width:100%; text-align:center; }
+  }
+ 
+  /* ---------- django messages ---------- */
+  .messages{
+    list-style:none;
+    margin:20px 0 0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .message{
+    font-size:14px;
+    padding:12px 16px;
+    border-radius:var(--radius);
+    border:1px solid var(--line);
+    background:var(--ink-soft);
+    color:var(--paper);
+  }
+  .message--success{ border-color:var(--gold); color:var(--gold); }
+  .message--error{ border-color:#b42318; color:#e07a6f; }
+  .message--warning{ border-color:#c98a2c; color:#e3ae55; }
+  .message--info{ border-color:var(--line); color:var(--paper-dim); }
  
   .site-footer{
     border-top:1px solid var(--line);
@@ -475,8 +625,11 @@
     display: block;
     width: 100%;
     height: auto;
-    border: 1px solid black;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    border: 1px solid var(--line);
     border-radius: var(--radius);
+    margin-bottom: 16px;
 }
 
 .project-header h1 {

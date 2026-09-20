@@ -2,8 +2,8 @@ from django.contrib import messages
 from django.core import serializers
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from portofolio.forms import EducationForm
-from main.models import Experience, Education
+from portofolio.forms import EducationForm, ProjectForm
+from main.models import Experience, Education, Project
 from django.db.models import Q
 
  
@@ -81,3 +81,73 @@ def delete_education(request, education_id):
         return redirect("main:show_education")
 
     return redirect("main:show_education")
+
+def show_projects(request):
+    query = request.GET.get("title", "").strip()
+    projects = Project.objects.all()
+ 
+    if query:
+        projects = projects.filter(title__icontains=query)
+ 
+    context = {
+        "name": "Yazid",
+        "project_list": projects,
+        "query": query,
+    }
+    return render(request, "projects.html", context)
+ 
+ 
+def create_project(request):
+    form = ProjectForm(request.POST or None, request.FILES or None)
+ 
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Proyek berhasil ditambahkan!")
+        return redirect("main:show_projects")
+ 
+    context = {
+        "name": "Yazid",
+        "form": form,
+    }
+    return render(request, "project_form.html", context)
+ 
+ 
+def update_project(request, project_id):
+    project = get_object_or_404(Project, pk=project_id)
+    form = ProjectForm(request.POST or None, request.FILES or None, instance=project)
+ 
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Proyek berhasil diperbarui!")
+        return redirect("main:show_projects")
+ 
+    context = {
+        "name": "Yazid",
+        "form": form,
+        "project": project,
+    }
+    return render(request, "project_form.html", context)
+ 
+ 
+def delete_project(request, project_id):
+    project = get_object_or_404(Project, pk=project_id)
+ 
+    if request.method == "POST":
+        project.delete()
+        messages.success(request, "Proyek berhasil dihapus!")
+        return redirect("main:show_projects")
+ 
+    return redirect("main:show_projects")
+ 
+ 
+def get_project_json(request):
+    query = request.GET.get("q", "").strip()
+    projects = Project.objects.all()
+ 
+    if query:
+        projects = projects.filter(
+            Q(title__icontains=query) | Q(tech_stack__icontains=query)
+        )
+ 
+    project_json = serializers.serialize("json", projects)
+    return HttpResponse(project_json, content_type="application/json")

@@ -4,9 +4,10 @@
 {% endblock meta %}
 {% block content %}
     <main>
-        <section class="experience-section" id="education">
+        <section class="experience" id="education">
             <div class="container">
                 <p class="section-kicker">Riwayat pendidikan saya</p>
+
                 <div class="project-header">
                     <h1>Education</h1>
                     <a href="{% url 'main:create_education' %}"
@@ -15,6 +16,7 @@
                         Tambah Pendidikan
                     </a>
                 </div>
+
                 <form method="get"
                       action="{% url 'main:show_education' %}"
                       class="project-search">
@@ -26,36 +28,77 @@
                            aria-label="Cari berdasarkan nama institusi">
                     <button type="submit" class="button">Cari</button>
                 </form>
-                <div class="experience-grid project-grid">
+
+                <div class="timeline">
+                    <div class="timeline-track"></div>
+                    <div class="timeline-fill" id="eduTimelineFill"></div>
+
                     {% for education in education_list %}
-                        <article class="experience-card">
-                            <h2>{{ education.institution_name }}</h2>
-                            <span class="experience-category">{{ education.program }}</span>
-                            <p class="experience-description">
+                        <div class="entry lit">
+                            <div class="entry-marker">{{ education.started_at|date:"y" }}</div>
+                            <span class="entry-year">
                                 {{ education.started_at|date:"Y" }} &ndash;
                                 {% if education.is_ongoing %}present{% else %}{{ education.ended_at|date:"Y" }}{% endif %}
-                            </p>
+                            </span>
+                            <div class="entry-role">{{ education.institution_name }}</div>
+                            <div class="entry-org">{{ education.program }}</div>
+
                             {% if education.description %}
-                                <p class="experience-description">{{ education.description }}</p>
+                                <p class="entry-description">{{ education.description }}</p>
                             {% endif %}
                             {% if education.score %}
-                                <p class="experience-description">Nilai: {{ education.score }}</p>
+                                <p class="entry-description">Nilai: {{ education.score }}</p>
                             {% endif %}
+                            {% if education.is_ongoing %}
+                                <div class="edu-ongoing">
+                                    <span class="edu-dot"></span>
+                                    Currently studying
+                                </div>
+                            {% endif %}
+
                             <div class="project-card-actions">
                                 <div class="project-actions">
                                     {% include "components/education_delete_modal.html" with education=education %}
                                 </div>
                             </div>
-                        </article>
+                        </div>
                     {% empty %}
                         {% if query %}
-                            <p class="empty-state">Tidak ada riwayat pendidikan dengan nama institusi tersebut.</p>
+                            <p class="empty-state empty-state--timeline">Tidak ada riwayat pendidikan dengan nama institusi tersebut.</p>
                         {% else %}
-                            <p class="empty-state">Belum ada riwayat pendidikan yang ditambahkan.</p>
+                            <p class="empty-state empty-state--timeline">Belum ada riwayat pendidikan yang ditambahkan.</p>
                         {% endif %}
                     {% endfor %}
                 </div>
             </div>
         </section>
+
+        <script>
+            (function(){
+                const track = document.querySelector('#education .timeline');
+                if(!track) return;
+                const fill = document.getElementById('eduTimelineFill');
+                const entries = Array.from(track.querySelectorAll('.entry'));
+
+                function update(){
+                    const rect = track.getBoundingClientRect();
+                    const vh = window.innerHeight;
+                    const progressPx = Math.min(Math.max(vh * 0.7 - rect.top, 0), rect.height);
+                    const pct = rect.height > 0 ? (progressPx / rect.height) * 100 : 0;
+                    if (fill) fill.style.height = pct + '%';
+
+                    entries.forEach(entry => {
+                        const r = entry.getBoundingClientRect();
+                        if(r.top < vh * 0.75){
+                            entry.classList.add('lit');
+                        }
+                    });
+                }
+
+                window.addEventListener('scroll', update, { passive:true });
+                window.addEventListener('resize', update);
+                update();
+            })();
+        </script>
     </main>
 {% endblock content %}
