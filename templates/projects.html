@@ -10,11 +10,11 @@
 
                 <div class="project-header">
                     <h1>Projects</h1>
-                    <a href="{% url 'main:create_project' %}"
+                    {% if user.is_superuser %}<a href="{% url 'main:create_project' %}"
                        class="button project-add-button">
                         <span aria-hidden="true">+</span>
                         Tambah Proyek
-                    </a>
+                    </a>{% endif %}
                 </div>
 
                 <form method="get"
@@ -61,6 +61,7 @@
                             {% endif %}
 
                             <div class="project-card-actions">
+                                {% include "components/project_star.html" with project=project %}
                                 {% if project.project_url or project.source_url %}
                                     <div class="project-links">
                                         {% if project.project_url %}
@@ -76,9 +77,11 @@
                                     </div>
                                 {% endif %}
                                 <div class="project-actions">
-                                    <a href="{% url 'main:update_project' project.id %}"
-                                       class="button button-secondary">Edit</a>
-                                    {% include "components/project_delete_modal.html" with project=project %}
+                                    {% if user.is_superuser %}
+                                        <a href="{% url 'main:update_project' project.id %}"
+                                           class="button button-secondary">Edit</a>
+                                        {% include "components/project_delete_modal.html" with project=project %}
+                                    {% endif %}
                                 </div>
                             </div>
                         </article>
@@ -99,6 +102,8 @@
         // ---- konfigurasi ----
         const JSON_URL = "{% url 'main:get_project_json' %}";
         const EDIT_URL_TEMPLATE = "{% url 'main:update_project' 0 %}".replace("0", "__ID__");
+        const IS_SUPERUSER = {{ user.is_superuser|yesno:"true,false" }};
+        const CURRENT_USERNAME = "{{ user.username|escapejs }}";
         const searchForm = document.querySelector(".project-search");
         const searchInput = searchForm ? searchForm.querySelector('input[name="title"]') : null;
         const grid = document.getElementById("projectGrid");
@@ -120,6 +125,9 @@
         // (itu property/method di model, bukan kolom DB), jadi dihitung ulang di sini.
         function cardHtml(item) {
             const f = item.fields;
+            const starredUsers = (f.starred_by || []).map((user) => Array.isArray(user) ? user[0] : String(user));
+            const isStarred = starredUsers.includes(CURRENT_USERNAME);
+            const starForm = `<form method="post" action="/projects/${item.pk}/star/" class="star-form"><input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken') || ''}"><button type="submit" class="button button-star${isStarred ? ' is-starred' : ''}"><span aria-hidden="true">★</span> ${isStarred ? 'Unstar' : 'Star'} <span class="star-count">${starredUsers.length}</span></button></form>`;
             const isOngoing = !f.ended_at;
             const techList = (f.tech_stack || "")
                 .split(",")
@@ -153,13 +161,18 @@
                     ${desc}
                     ${tags}
                     <div class="project-card-actions">
+                        ${starForm}
                         ${links}
-                        <div class="project-actions">
-                            <a href="${editUrl}" class="button button-secondary">Edit</a>
-                        </div>
+                        ${IS_SUPERUSER ? `<div class="project-actions"><a href="${editUrl}" class="button button-secondary">Edit</a></div>` : ""}
                     </div>
                 </article>
             `;
+        }
+
+        function getCookie(name) {
+            const match = document.cookie.split(';').map((cookie) => cookie.trim())
+                .find((cookie) => cookie.startsWith(`${name}=`));
+            return match ? decodeURIComponent(match.slice(name.length + 1)) : null;
         }
 
         function render(items) {
