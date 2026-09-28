@@ -12,6 +12,10 @@ from portofolio.forms import EducationForm, ProjectForm
 from main.models import Experience, Education, Project
 from django.db.models import Q
 
+
+def is_editor(user):
+    return user.is_authenticated and user.groups.filter(name="Editor").exists()
+
  
 def show_main(request):
     context = {
@@ -102,6 +106,7 @@ def show_projects(request):
         "name": "Yazid",
         "project_list": projects,
         "query": query,
+        "is_editor": is_editor(request.user),
     }
     return render(request, "projects.html", context)
  
@@ -126,7 +131,7 @@ def create_project(request):
  
 @login_required(login_url="/login/")
 def update_project(request, project_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or is_editor(request.user)):
         raise PermissionDenied
     project = get_object_or_404(Project, pk=project_id)
     form = ProjectForm(request.POST or None, request.FILES or None, instance=project)
