@@ -6,12 +6,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.core import serializers
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from portofolio.forms import EducationForm, ProjectForm
 from main.models import Experience, Education, Project
-from django.db.models import Q
+from django.db.models import Count, Exists, OuterRef, Q
 
 
 def is_editor(user):
@@ -173,8 +173,38 @@ def get_project_json(request):
             Q(title__icontains=query) | Q(tech_stack__icontains=query)
         )
  
-    project_json = serializers.serialize("json", projects, use_natural_foreign_keys=True)
-    return HttpResponse(project_json, content_type="application/json")
+    through_model = Project.starred_by.through
+    projects = projects.annotate(star_count=Count("starred_by", distinct=True))
+    if request.user.is_authenticated:
+        projects = projects.annotate(
+            is_starred=Exists(
+                through_model.objects.filter(
+                    project_id=OuterRef("pk"), user_id=request.user.pk
+                )
+            )
+        )
+
+    data = [
+        {
+            "pk": project.pk,
+            "fields": {
+                "title": project.title,
+                "description": project.description,
+                "tech_stack": project.tech_stack,
+                "thumbnail": project.thumbnail.name if project.thumbnail else "",
+                "project_url": project.project_url,
+                "source_url": project.source_url,
+                "started_at": project.started_at.isoformat(),
+                "ended_at": project.ended_at.isoformat() if project.ended_at else None,
+                "is_ongoing": project.is_ongoing,
+                "is_featured": project.is_featured,
+                "star_count": project.star_count,
+                "is_starred": getattr(project, "is_starred", False),
+            },
+        }
+        for project in projects
+    ]
+    return JsonResponse(data, safe=False)
 
 
 def register(request):
