@@ -1,4 +1,5 @@
 import uuid
+from django.contrib.auth.models import User
 from django.db import models
 
 class Experience(models.Model):
@@ -62,6 +63,7 @@ class Project(models.Model):
     ended_at = models.DateField(blank=True, null=True)
     is_featured = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    starred_by = models.ManyToManyField(User, related_name="starred_projects", blank=True)
  
     class Meta:
         ordering = ["-is_featured", "-started_at"]
