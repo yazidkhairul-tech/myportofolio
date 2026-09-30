@@ -4,14 +4,13 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.core import serializers
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from portofolio.forms import EducationForm, ProjectForm
 from main.models import Experience, Education, Project
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models import Q
 
 
 def is_editor(user):
@@ -43,33 +42,49 @@ def show_experience(request):
  
  
 def show_education(request):
-    json_response = get_education_json(request)
+    title_query = request.GET.get("institution_name", "").strip()
+    education = Education.objects.all()
 
-    education = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
-    )
-    education = [item.object for item in education]
-    query = request.GET.get("institution_name", "").strip()
+    if title_query:
+        education = education.filter(
+            Q(institution_name__icontains=title_query)
+            | Q(program__icontains=title_query)
+        )
 
     context = {
-        "name": "Yazid Khairul Firmansyah",
+        "name": "Burhan",
         "education_list": education,
-        "query": query,
+        "query": title_query,
+        "title_query": title_query,
+        "form": EducationForm(),
     }
     return render(request, "education.html", context)
 
 def get_education_json(request):
-      query = request.GET.get("q", "").strip()
-      education = Education.objects.all()
+    query = request.GET.get("institution_name", request.GET.get("q", "")).strip()
+    education = Education.objects.all()
 
-      if query:
-          education = education.filter(
-              Q(institution_name__icontains=query) | Q(program__icontains=query)
-          )
+    if query:
+        education = education.filter(
+            Q(institution_name__icontains=query) | Q(program__icontains=query)
+        )
 
-      education_json = serializers.serialize("json", education)
-      return HttpResponse(education_json, content_type="application/json")
+    data = [
+        {
+            "pk": str(item.pk),
+            "fields": {
+                "institution_name": item.institution_name,
+                "program": item.program,
+                "description": item.description,
+                "score": item.score,
+                "started_at": item.started_at.isoformat(),
+                "ended_at": item.ended_at.isoformat() if item.ended_at else None,
+                "is_ongoing": item.is_ongoing,
+            },
+        }
+        for item in education
+    ]
+    return JsonResponse(data, safe=False)
 
 def create_education(request):
     form = EducationForm(request.POST or None)
@@ -97,16 +112,18 @@ def delete_education(request, education_id):
     return redirect("main:show_education")
 
 def show_projects(request):
-    query = request.GET.get("title", "").strip()
+    title_query = request.GET.get("title", "").strip()
     projects = Project.objects.all()
  
-    if query:
-        projects = projects.filter(title__icontains=query)
+    if title_query:
+        projects = projects.filter(title__icontains=title_query)
  
     context = {
-        "name": "Yazid",
+        "name": "Burhan",
         "project_list": projects,
-        "query": query,
+        "query": title_query,
+        "title_query": title_query,
+        "form": ProjectForm(),
         "is_editor": is_editor(request.user),
     }
     return render(request, "projects.html", context)
@@ -165,45 +182,43 @@ def delete_project(request, project_id):
  
  
 def get_project_json(request):
-    query = request.GET.get("q", "").strip()
-    projects = Project.objects.all()
+    query = request.GET.get("title", request.GET.get("q", "")).strip()
+    projects = Project.objects.prefetch_related("starred_by").all()
  
     if query:
         projects = projects.filter(
             Q(title__icontains=query) | Q(tech_stack__icontains=query)
         )
  
-    through_model = Project.starred_by.through
-    projects = projects.annotate(star_count=Count("starred_by", distinct=True))
-    if request.user.is_authenticated:
-        projects = projects.annotate(
-            is_starred=Exists(
-                through_model.objects.filter(
-                    project_id=OuterRef("pk"), user_id=request.user.pk
-                )
-            )
+    data = []
+    for project in projects:
+        starred_users = list(project.starred_by.all())
+        data.append(
+            {
+                "pk": str(project.pk),
+                "fields": {
+                    "title": project.title,
+                    "description": project.description,
+                    "tech_stack": project.tech_stack,
+                    "thumbnail": project.thumbnail.name if project.thumbnail else "",
+                    "project_url": project.project_url,
+                    "source_url": project.source_url,
+                    "started_at": project.started_at.isoformat(),
+                    "ended_at": project.ended_at.isoformat() if project.ended_at else None,
+                    "is_ongoing": project.is_ongoing,
+                    "is_featured": project.is_featured,
+                    "star_count": len(starred_users),
+                    "is_starred": (
+                        request.user in starred_users
+                        if request.user.is_authenticated
+                        else False
+                    ),
+                    "starred_by_names": ", ".join(
+                        user.username for user in starred_users
+                    ),
+                },
+            }
         )
-
-    data = [
-        {
-            "pk": project.pk,
-            "fields": {
-                "title": project.title,
-                "description": project.description,
-                "tech_stack": project.tech_stack,
-                "thumbnail": project.thumbnail.name if project.thumbnail else "",
-                "project_url": project.project_url,
-                "source_url": project.source_url,
-                "started_at": project.started_at.isoformat(),
-                "ended_at": project.ended_at.isoformat() if project.ended_at else None,
-                "is_ongoing": project.is_ongoing,
-                "is_featured": project.is_featured,
-                "star_count": project.star_count,
-                "is_starred": getattr(project, "is_starred", False),
-            },
-        }
-        for project in projects
-    ]
     return JsonResponse(data, safe=False)
 
 
@@ -242,3 +257,21 @@ def toggle_star(request, project_id):
     else:
         project.starred_by.add(request.user)
     return redirect("main:show_projects")
+
+@require_POST
+def create_project_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {"message": "Hanya pemilik portofolio yang dapat menambahkan proyek."},
+            status=403,
+        )
+
+    form = ProjectForm(request.POST)
+    if form.is_valid():
+        project = form.save()
+        return JsonResponse(
+            {"message": "Proyek berhasil ditambahkan.", "pk": str(project.id)},
+            status=201,
+        )
+
+    return JsonResponse({"errors": form.errors.get_json_data()}, status=400)

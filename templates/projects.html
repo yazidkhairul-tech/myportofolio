@@ -10,26 +10,41 @@
 
                 <div class="project-header">
                     <h1>Projects</h1>
-                    {% if user.is_superuser %}<a href="{% url 'main:create_project' %}"
-                       class="button project-add-button">
-                        <span aria-hidden="true">+</span>
-                        Tambah Proyek
-                    </a>{% endif %}
+                    {% if user.is_superuser %}
+                    <button type="button"class="button project-add-button"popovertarget="add-project-modal"><span aria-hidden="true">+</span>Tambah Proyek</button>
+                    {% endif %}
                 </div>
 
                 <button class="button button-secondary" onclick="showToast('Notifikasi Sistem', 'Project berhasil dimuat dengan baik!', 'success')">Test Toast Notifikasi</button>
 
-                <form method="get"
-                      action="{% url 'main:show_projects' %}"
-                      class="project-search">
+                <form id="project-search-form" class="project-search">
                     <input type="search"
+                           id="search-input"
                            name="title"
-                           value="{{ query }}"
+                           value="{{ title_query }}"
                            placeholder="Cari berdasarkan nama proyek"
                            class="project-search__input"
                            aria-label="Cari berdasarkan nama proyek">
                     <button type="submit" class="button">Cari</button>
                 </form>
+
+                <!-- Loading State -->
+                <div id="loading" class="empty-state hide">
+                    <p>Memuat projects...</p>
+                </div>
+
+                <!-- Error State -->
+                <div id="error" class="empty-state hide">
+                    <p>Gagal memuat data projects. Silakan coba lagi.</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty" class="empty-state hide">
+                    <p>Belum ada proyek yang ditambahkan atau ditemukan.</p>
+                </div>
+
+                <!-- Project Grid -->
+                <div id="grid" class="experience-grid project-grid hide"></div>
 
                 <div class="project-list-grid" id="projectGrid">
                     {% for project in project_list %}
@@ -100,112 +115,220 @@
             </div>
         </section>
     </main>
+    {% if user.is_superuser %}
+    {% include "components/project_form_modal.html" %}
+    {% endif %}
 
     <script>
-    (function () {
-        // ---- konfigurasi ----
-        const JSON_URL = "{% url 'main:get_project_json' %}";
-        const EDIT_URL_TEMPLATE = "{% url 'main:update_project' 0 %}".replace("0", "__ID__");
-        const CAN_EDIT_PROJECTS = {{ user.is_superuser|yesno:"true,false" }} || {{ is_editor|yesno:"true,false" }};
-        const searchForm = document.querySelector(".project-search");
-        const searchInput = searchForm ? searchForm.querySelector('input[name="title"]') : null;
-        const grid = document.getElementById("projectGrid");
+    // Konfigurasi
+    const BASE_PROJECTS_ENDPOINT = "{% url 'main:get_project_json' %}";
+    const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
+    let projectsAbortController;
 
-        if (!searchForm || !grid) return;
+    // Elemen DOM
+    const loadingState = document.getElementById('loading');
+    const errorState = document.getElementById('error');
+    const emptyState = document.getElementById('empty');
+    const gridContainer = document.getElementById('grid');
+    const searchForm = document.getElementById('project-search-form');
+    const searchInput = document.getElementById('search-input');
+    const SEARCH_DEBOUNCE_DELAY = 300;
+    let searchDebounceTimer;
 
-        function escapeHtml(str) {
-            const div = document.createElement("div");
-            div.textContent = str ?? "";
-            return div.innerHTML;
-        }
+    // Menyembunyikan/Menampilkan section halaman
+    function displayPageSection({ showLoading = false, showError = false, showEmpty = false, showGrid = false }) {
+        loadingState.classList.toggle('hide', !showLoading);
+        errorState.classList.toggle('hide', !showError);
+        emptyState.classList.toggle('hide', !showEmpty);
+        gridContainer.classList.toggle('hide', !showGrid);
+    }
 
-        function yearOf(dateStr) {
-            return dateStr ? new Date(dateStr).getFullYear() : "";
-        }
+    // Membuat elemen card project
+     // Mengubah karakter khusus HTML menjadi entity agar ditampilkan sebagai teks
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+    function buildProjectCardElement(item) {
+        const project = item.fields;
+        const projectId = item.pk;
 
-        // Bangun 1 kartu proyek dari hasil deserialisasi JSON.
-        // Field seperti is_ongoing / tech_list tidak ikut ter-serialize
-        // (itu property/method di model, bukan kolom DB), jadi dihitung ulang di sini.
-        function cardHtml(item) {
-            const f = item.fields;
-            const isStarred = f.is_starred;
-            const starForm = `<form method="post" action="/projects/${item.pk}/star/" class="star-form"><input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken') || ''}"><button type="submit" class="button button-star${isStarred ? ' is-starred' : ''}"><span aria-hidden="true">★</span> ${isStarred ? 'Unstar' : 'Star'} <span class="star-count">${f.star_count}</span></button></form>`;
-            const isOngoing = !f.ended_at;
-            const techList = (f.tech_stack || "")
-                .split(",")
-                .map((t) => t.trim())
-                .filter(Boolean);
+        const articleElement = document.createElement('article');
+        articleElement.className = 'experience-card';
 
-            const badge = f.is_featured ? '<span class="project-badge">Featured</span>' : "";
-            const thumb = f.thumbnail
-                ? `<img src="/media/${f.thumbnail}" alt="Tampilan proyek ${escapeHtml(f.title)}" class="project-image">`
-                : "";
-            const desc = f.description
-                ? `<p class="project-description">${escapeHtml(f.description)}</p>`
-                : "";
-            const tags = techList.length
-                ? `<ul class="tech-tags">${techList.map((t) => `<li class="tech-tag">${escapeHtml(t)}</li>`).join("")}</ul>`
-                : "";
-            const links = (f.project_url || f.source_url)
-                ? `<div class="project-links">
-                        ${f.project_url ? `<a href="${f.project_url}" target="_blank" rel="noopener" class="social-link">Live Demo</a>` : ""}
-                        ${f.source_url ? `<a href="${f.source_url}" target="_blank" rel="noopener" class="social-link">Source</a>` : ""}
-                   </div>`
-                : "";
-            const editUrl = EDIT_URL_TEMPLATE.replace("__ID__", item.pk);
+        const imageHtml = project.project_image_url
+            ? `<img src="${escapeHtml(project.project_image_url)}" alt="Gambar ${escapeHtml(project.title)}" class="project-image">`
+            : '';
 
-            return `
-                <article class="project-card${f.is_featured ? " project-card--featured" : ""}">
-                    ${badge}
-                    ${thumb}
-                    <h2 class="project-title">${escapeHtml(f.title)}</h2>
-                    <p class="project-meta">${yearOf(f.started_at)} &ndash; ${isOngoing ? "present" : yearOf(f.ended_at)}</p>
-                    ${desc}
-                    ${tags}
-                    <div class="project-card-actions">
-                        ${starForm}
-                        ${links}
-                        ${CAN_EDIT_PROJECTS ? `<div class="project-actions"><a href="${editUrl}" class="button button-secondary">Edit</a></div>` : ""}
-                    </div>
-                </article>
-            `;
-        }
+        const urlHtml = project.project_url
+            ? `<a href="${escapeHtml(project.project_url)}" class="button">Lihat Project</a>`
+            : '';
 
-        function getCookie(name) {
-            const match = document.cookie.split(';').map((cookie) => cookie.trim())
-                .find((cookie) => cookie.startsWith(`${name}=`));
-            return match ? decodeURIComponent(match.slice(name.length + 1)) : null;
-        }
+        // Dummy UUID digunakan untuk digantikan oleh ID asli dari data JSON
+        const deleteUrl = "{% url 'main:delete_project' 0 %}".replace('/0/', `/${projectId}/`);
+        const starUrl = "{% url 'main:toggle_star' 0 %}".replace('/0/', `/${projectId}/`);
 
-        function render(items) {
-            if (!items.length) {
-                grid.innerHTML = '<p class="empty-state">Tidak ada proyek dengan nama tersebut.</p>';
-                return;
+        const deleteHtml = IS_SUPERUSER 
+            ? `<form method="post" action="${deleteUrl}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="button button-danger" onclick="return confirm('Yakin ingin menghapus project ini?');">Hapus</button>
+            </form>`
+            : '';
+
+        const isStarredClass = project.is_starred ? " is-starred" : "";
+        const starText = project.is_starred ? "Unstar" : "Star";
+        const starTitle = project.star_count > 0
+            ? `Dibintangi oleh ${escapeHtml(project.starred_by_names)}`
+            : "Jadilah yang pertama memberi star";
+
+        // Komponen card
+        const completeCardHtml = `
+            ${imageHtml}
+            <h2>${escapeHtml(project.title)}</h2>
+            <span class="experience-category">${escapeHtml(project.tech_stack)}</span>
+            <p class="experience-description">${escapeHtml(project.description)}</p>
+            <div class="project-card-actions">
+                <div class="project-actions">
+                    ${urlHtml}
+                    
+                    <form method="post" action="${starUrl}" class="star-form">
+                        {% csrf_token %}
+                        <button type="submit" 
+                                class="button button-star${isStarredClass}"
+                                title="${starTitle}">
+                            <span aria-hidden="true">★</span>
+                            ${starText}
+                            <span class="star-count">${project.star_count}</span>
+                        </button>
+                    </form>
+
+                    ${deleteHtml}
+                </div>
+            </div>
+        `;
+
+        articleElement.innerHTML = completeCardHtml;
+        return articleElement;
+    }
+
+    // Fetch data project
+    async function fetchProjects(searchQuery = "") {
+        if (projectsAbortController) projectsAbortController.abort();
+        projectsAbortController = new AbortController();
+
+        try {
+            displayPageSection({ showLoading: true });
+            
+            const url = searchQuery ? `${BASE_PROJECTS_ENDPOINT}?title=${encodeURIComponent(searchQuery)}` : BASE_PROJECTS_ENDPOINT;
+            
+            const response = await fetch(url, {
+                headers: { 'Accept': 'application/json' },
+                signal: projectsAbortController.signal,
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch data');
+
+            const projectData = await response.json();
+
+            if (projectData.length === 0) {
+                displayPageSection({ showEmpty: true });
+            } else {
+                gridContainer.innerHTML = '';
+                projectData.forEach(item => {
+                    gridContainer.appendChild(buildProjectCardElement(item));
+                });
+                displayPageSection({ showGrid: true });
             }
-            grid.innerHTML = items.map(cardHtml).join("");
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+            console.error('Error loading projects:', error);
+            displayPageSection({ showError: true });
         }
+    }
 
-        async function fetchAndRender(query) {
-            const url = new URL(JSON_URL, window.location.origin);
-            if (query) url.searchParams.set("q", query);
+    // Event Handlers untuk Form Search
+    function searchProjects() {
+    fetchProjects(searchInput.value.trim());
+}
 
-            const response = await fetch(url);
-            const rawText = await response.text();   // ambil string JSON mentah dari server
-            const data = JSON.parse(rawText);         // deserialisasi: string JSON -> array object JS
-            render(data);
+searchInput.addEventListener("input", function() {
+    clearTimeout(searchDebounceTimer);
+
+    searchDebounceTimer = setTimeout(function() {
+        searchProjects();
+    }, SEARCH_DEBOUNCE_DELAY);
+});
+
+searchForm.addEventListener("submit", function(event) {
+    event.preventDefault();
+    clearTimeout(searchDebounceTimer);
+    searchProjects();
+});
+
+    function closeProjectModal() {
+    document.getElementById("add-project-modal").hidePopover();
+}
+    const CREATE_PROJECT_ENDPOINT = "{% url 'main:create_project_ajax' %}";
+    const projectForm = document.getElementById('project-form');
+
+    // Membaca nilai cookie, digunakan untuk mengambil token CSRF
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
         }
+        return cookieValue;
+    }
 
-        searchForm.addEventListener("submit", function (e) {
-            e.preventDefault();
-            const query = searchInput ? searchInput.value.trim() : "";
+    // Mengirim data form ke server
+    async function addProject(event) {
+        event.preventDefault();
 
-            const newUrl = new URL(window.location.href);
-            if (query) newUrl.searchParams.set("title", query);
-            else newUrl.searchParams.delete("title");
-            window.history.pushState({}, "", newUrl);
+        const submitButton = projectForm.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
 
-            fetchAndRender(query);
-        });
-    })();
+        try {
+            const response = await fetch(CREATE_PROJECT_ENDPOINT, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                body: new FormData(projectForm),
+            });
+            const result = await response.json().catch(() => ({}));
+
+            if (response.ok) {
+                projectForm.reset();
+                closeProjectModal();
+                showToast('Berhasil', 'Proyek baru berhasil ditambahkan!', 'success');
+                fetchProjects(searchInput.value.trim());
+            } else {
+                const errorMessages = result.errors
+                    ? Object.values(result.errors).flat().map(error => error.message)
+                    : [result.message || `Terjadi kesalahan (status ${response.status}).`];
+                showToast('Gagal menambahkan proyek', errorMessages.join(' '), 'error');
+            }
+        } catch (error) {
+            console.error('Error adding project:', error);
+            showToast('Gagal menambahkan proyek', 'Tidak dapat terhubung ke server. Silakan coba lagi.', 'error');
+        } finally {
+            submitButton.disabled = false;
+        }
+    }
+
+    if (projectForm) {
+        projectForm.addEventListener('submit', addProject);
+    }
+    // Start application
+    fetchProjects(searchInput.value.trim());
     </script>
 {% endblock content %}
