@@ -46,9 +46,11 @@
   {% block content %} {% endblock content %}
 
   <footer class="site-footer">
-      <div class="container">
-          <p>&copy; 2026 {{ name }}. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
-      </div>
-  </footer>
+        <div class="container">
+            <p>&copy; 2026 {{ name }}. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
+        </div>
+    </footer>
+    
+    {% include 'components/toast.html' %}
 </body>
 </html>
