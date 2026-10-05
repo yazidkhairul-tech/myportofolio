@@ -57,3 +57,30 @@ Kelas : PBP D
 
    Kita perlu melakukan proses **serialization** pada model Django sebelum datanya dikembalikan karena objek model Django adalah objek Python (instance class) yang kompleks — punya method, relasi ke model lain, koneksi ke database, dan tipe data Python native (seperti `datetime`, `Decimal`, dsb.) yang **tidak bisa langsung dikonversi menjadi teks/JSON** oleh protokol HTTP. HTTP hanya bisa mengirim data dalam bentuk teks (string byte), sehingga objek model tersebut harus diubah dulu (diserialisasi) menjadi format teks terstruktur seperti JSON, agar bisa dikirim melalui jaringan dan nantinya dapat dibaca/di-parse kembali (deserialisasi) oleh pihak yang menerimanya, baik itu browser, aplikasi mobile, maupun sistem lain.
 
+### Tugas 5
+
+1. **Pengertian debouncing dan kepentingannya pada fitur pencarian berbasis AJAX:**
+   *Debouncing* adalah teknik optimasi pemrograman yang menunda pemanggilan suatu fungsi hingga jeda waktu tertentu (*delay*) telah berlalu sejak event terakhir kali dipicu. Jika event baru terjadi kembali sebelum jeda waktu tersebut berakhir (misalnya pengguna masih terus menekan tombol keyboard untuk mengetik), penghitung waktu (*timer*) yang lama akan dibatalkan (`clearTimeout`) dan digantikan oleh penghitung waktu yang baru.
+   
+   Teknik ini sangat penting diterapkan pada fitur pencarian AJAX karena:
+   - **Mencegah beban berlebih pada server dan database:** Tanpa debouncing, setiap ketukan tombol (*keystroke*) akan mengirim satu permintaan HTTP ke server. Mengetik kata "Universitas" akan memicu 11 permintaan sekaligus dalam hitungan detik. Dengan debouncing, hanya 1 permintaan yang dikirimkan setelah pengguna berhenti mengetik sejenak.
+   - **Mencegah *race condition* (inkonsistensi data):** Karena kecepatan transmisi jaringan bersifat asinkron, respons dari permintaan pertama (misalnya kata kunci "Uni") bisa saja sampai lebih lambat daripada respons dari permintaan kedua ("Universitas"). Tanpa debouncing dan pembatalan permintaan (*AbortController*), respons yang sudah usang dapat menimpa hasil pencarian terbaru.
+   - **Menghemat bandwidth dan meningkatkan responsivitas antarmuka (UI):** Mengurangi jumlah request secara drastis membuat konsumsi bandwidth hemat dan browser tidak terbebani oleh render ulang yang tidak perlu secara terus-menerus.
+
+2. **Fungsi kata kunci `await` saat menggunakan `fetch()` dan konsekuensi jika tidak digunakan:**
+   Fungsi utama kata kunci `await` adalah untuk menunda (*pause*) eksekusi kode di dalam fungsi `async` sampai objek `Promise` yang dihasilkan oleh `fetch()` selesai diproses (*resolved* atau *rejected*), kemudian langsung mengekstrak nilai hasil (*resolved value*) dari Promise tersebut (yaitu objek `Response` HTTP).
+   
+   Jika kita **tidak menggunakan `await`**:
+   - Pemanggilan `const response = fetch(url);` tidak akan menghasilkan objek `Response`, melainkan objek `Promise {<pending>}`.
+   - Saat kode selanjutnya mencoba membaca properti atau metode dari objek tersebut, seperti `if (!response.ok)` atau `response.json()`, kode akan menghasilkan error atau perilaku yang tidak terduga karena objek `Promise` tidak memiliki properti `ok` (bernilai `undefined`).
+   - Jika kita memanggil `response.json()` tanpa `await`, hasilnya pun kembali berupa `Promise` kedua, bukan array/data JSON sebenarnya. Mencoba mengakses data seperti `data.length` atau `data.forEach(...)` akan langsung melempar error `TypeError: data.forEach is not a function`.
+   - Kode di bawahnya akan berjalan secara sinkron mendahului selesainya proses pengambilan data dari jaringan, sehingga data belum siap ditampilkan ke DOM dan antarmuka web menjadi kosong atau rusak (*broken state*).
+
+3. **Pengertian serangan XSS (Cross-Site Scripting) dan alasan kerentanan data via AJAX/JavaScript dibanding template Django:**
+   *Cross-Site Scripting* (XSS) adalah kerentanan keamanan web di mana penyerang berhasil menyisipkan skrip berbahaya (biasanya berupa kode JavaScript jahat) ke dalam aplikasi web terpercaya, yang kemudian dieksekusi di peramban (*browser*) pengguna lain yang mengakses halaman tersebut. Melalui XSS, penyerang dapat mencuri cookie sesi atau kredensial, melakukan pembajakan akun (*session hijacking*), merekam ketukan tombol (*keylogging*), hingga memanipulasi tampilan dan fungsi halaman secara tidak sah.
+   
+   Data yang ditampilkan melalui **AJAX/JavaScript jauh lebih rentan terhadap serangan XSS** dibandingkan data yang ditampilkan langsung melalui template Django karena:
+   - **Template Django memiliki perlindungan otomatis (*Auto-escaping*):** Secara bawaan (*by default*), mesin template Django menerapkan *contextual HTML escaping* pada semua variabel yang dirender (`{{ variable }}`). Karakter-karakter khusus HTML yang berpotensi mengeksekusi skrip (seperti `<`, `>`, `&`, `"`, `'`) secara otomatis diubah menjadi *HTML entities* (seperti `&lt;`, `&gt;`). Skrip berbahaya yang tersimpan di database hanya akan ditampilkan sebagai teks polos di layar tanpa dieksekusi oleh browser.
+   - **Penyisipan manual di JavaScript/DOM tidak memiliki auto-escaping bawaan:** Ketika data diambil lewat AJAX (format JSON), data tersebut murni berupa string teks mentah. Jika pengembang menyisipkannya ke halaman menggunakan properti manipulasi DOM seperti `innerHTML` atau interpolasi template literal (misalnya `element.innerHTML = '<h2>' + data.title + '</h2>'`), browser akan langsung mem-parsing string tersebut sebagai kode HTML murni. Jika data tersebut mengandung payload berbahaya seperti `<img src="x" onerror="alert('XSS!')">`, skrip jahat akan langsung dieksekusi oleh browser. Oleh sebab itu, saat menggunakan AJAX/JavaScript, pengembang wajib secara eksplisit melakukan sanitasi di sisi server (misal dengan `strip_tags` pada ModelForm) serta melakukan *escaping* manual (misal fungsi `escapeHtml()`) atau menggunakan `textContent` di sisi client.
+
+
