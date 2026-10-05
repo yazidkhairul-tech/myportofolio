@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.forms import (
     DateInput,
     ModelForm,
@@ -6,6 +7,7 @@ from django.forms import (
     DateTimeInput,
     NumberInput,
 )
+from django.utils.html import strip_tags
 
 from main.models import Education, Project
 
@@ -72,6 +74,29 @@ class EducationForm(ModelForm):
         self.fields["ended_at"].required = False
         self.fields["score"].required = False
         self.fields["description"].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        started_at = cleaned_data.get("started_at")
+        ended_at = cleaned_data.get("ended_at")
+        if started_at and ended_at and ended_at < started_at:
+            self.add_error("ended_at", "Tanggal selesai tidak boleh lebih awal dari tanggal mulai.")
+        return cleaned_data
+
+    def clean_institution_name(self):
+        institution_name = strip_tags(self.cleaned_data.get("institution_name", "")).strip()
+        if not institution_name:
+            raise ValidationError("Nama institusi tidak boleh hanya berisi tag HTML.")
+        return institution_name
+
+    def clean_program(self):
+        program = strip_tags(self.cleaned_data.get("program", "")).strip()
+        if not program:
+            raise ValidationError("Program / Jurusan tidak boleh hanya berisi tag HTML.")
+        return program
+
+    def clean_description(self):
+        return strip_tags(self.cleaned_data.get("description", "")).strip()
 
 class ProjectForm(ModelForm):
     class Meta:
