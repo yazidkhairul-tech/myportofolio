@@ -52,7 +52,7 @@ def show_education(request):
         )
 
     context = {
-        "name": "Burhan",
+        "name": "Yazid",
         "education_list": education,
         "query": title_query,
         "title_query": title_query,
@@ -62,28 +62,39 @@ def show_education(request):
 
 def get_education_json(request):
     query = request.GET.get("institution_name", request.GET.get("q", "")).strip()
-    education = Education.objects.all()
+    education = Education.objects.prefetch_related("starred_by").all()
 
     if query:
         education = education.filter(
             Q(institution_name__icontains=query) | Q(program__icontains=query)
         )
 
-    data = [
-        {
-            "pk": str(item.pk),
-            "fields": {
-                "institution_name": item.institution_name,
-                "program": item.program,
-                "description": item.description,
-                "score": item.score,
-                "started_at": item.started_at.isoformat(),
-                "ended_at": item.ended_at.isoformat() if item.ended_at else None,
-                "is_ongoing": item.is_ongoing,
-            },
-        }
-        for item in education
-    ]
+    data = []
+    for item in education:
+        starred_users = list(item.starred_by.all())
+        data.append(
+            {
+                "pk": str(item.pk),
+                "fields": {
+                    "institution_name": item.institution_name,
+                    "program": item.program,
+                    "description": item.description,
+                    "score": item.score,
+                    "started_at": item.started_at.isoformat() if item.started_at else None,
+                    "ended_at": item.ended_at.isoformat() if item.ended_at else None,
+                    "is_ongoing": item.is_ongoing,
+                    "star_count": len(starred_users),
+                    "is_starred": (
+                        request.user in starred_users
+                        if request.user.is_authenticated
+                        else False
+                    ),
+                    "starred_by_names": ", ".join(
+                        user.username for user in starred_users
+                    ),
+                },
+            }
+        )
     return JsonResponse(data, safe=False)
 
 def create_education(request):
@@ -119,7 +130,7 @@ def show_projects(request):
         projects = projects.filter(title__icontains=title_query)
  
     context = {
-        "name": "Burhan",
+        "name": "Yazid",
         "project_list": projects,
         "query": title_query,
         "title_query": title_query,
@@ -257,6 +268,17 @@ def toggle_star(request, project_id):
     else:
         project.starred_by.add(request.user)
     return redirect("main:show_projects")
+ 
+@login_required(login_url="/login/")
+@require_POST
+def toggle_star_education(request, education_id):
+    education = get_object_or_404(Education, pk=education_id)
+    if education.starred_by.filter(pk=request.user.pk).exists():
+        education.starred_by.remove(request.user)
+    else:
+        education.starred_by.add(request.user)
+    return redirect("main:show_education")
+
 
 @require_POST
 def create_project_ajax(request):
@@ -275,3 +297,23 @@ def create_project_ajax(request):
         )
 
     return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+
+
+@require_POST
+def create_education_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {"message": "Hanya pemilik portofolio yang dapat menambahkan riwayat pendidikan."},
+            status=403,
+        )
+
+    form = EducationForm(request.POST)
+    if form.is_valid():
+        education = form.save()
+        return JsonResponse(
+            {"message": "Riwayat pendidikan berhasil ditambahkan.", "pk": str(education.id)},
+            status=201,
+        )
+
+    return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+
