@@ -10,97 +10,318 @@
 
                 <div class="project-header">
                     <h1>Education</h1>
-                    <a href="{% url 'main:create_education' %}"
-                       class="button project-add-button">
-                        <span aria-hidden="true">+</span>
-                        Tambah Pendidikan
-                    </a>
+                    {% if user.is_superuser %}
+                    <button type="button" class="button project-add-button" popovertarget="add-education-modal">
+                        <span aria-hidden="true">+</span> Tambah Pendidikan
+                    </button>
+                    {% endif %}
                 </div>
 
-                <button class="button button-secondary" onclick="showToast('Notifikasi Sistem', 'Project berhasil dimuat dengan baik!', 'success')">Test Toast Notifikasi</button>
+                <button class="button button-secondary" onclick="showToast('Notifikasi Sistem', 'Halaman Education dimuat dengan baik!', 'success')">Test Toast Notifikasi</button>
 
-                <form method="get"
-                      action="{% url 'main:show_education' %}"
-                      class="project-search">
+                <form id="education-search-form" class="project-search">
                     <input type="search"
+                           id="education-search-input"
                            name="institution_name"
                            value="{{ query }}"
-                           placeholder="Cari berdasarkan nama institusi"
+                           placeholder="Cari berdasarkan nama institusi atau program studi"
                            class="project-search__input"
-                           aria-label="Cari berdasarkan nama institusi">
+                           aria-label="Cari berdasarkan nama institusi atau program studi">
                     <button type="submit" class="button">Cari</button>
                 </form>
 
-                <div class="timeline">
+                <!-- Loading State -->
+                <div id="education-loading" class="empty-state hide">
+                    <p>Memuat data pendidikan...</p>
+                </div>
+
+                <!-- Error State -->
+                <div id="education-error" class="empty-state hide">
+                    <p>Gagal memuat data pendidikan. Silakan coba lagi.</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="education-empty" class="empty-state hide">
+                    <p class="empty-state empty-state--timeline">Belum ada riwayat pendidikan yang ditambahkan atau ditemukan.</p>
+                </div>
+
+                <!-- Timeline Container (Rendered dynamically via AJAX) -->
+                <div id="education-timeline" class="timeline hide">
                     <div class="timeline-track"></div>
                     <div class="timeline-fill" id="eduTimelineFill"></div>
-
-                    {% for education in education_list %}
-                        <div class="entry lit">
-                            <div class="entry-marker">{{ education.started_at|date:"y" }}</div>
-                            <span class="entry-year">
-                                {{ education.started_at|date:"Y" }} &ndash;
-                                {% if education.is_ongoing %}present{% else %}{{ education.ended_at|date:"Y" }}{% endif %}
-                            </span>
-                            <div class="entry-role">{{ education.institution_name }}</div>
-                            <div class="entry-org">{{ education.program }}</div>
-
-                            {% if education.description %}
-                                <p class="entry-description">{{ education.description }}</p>
-                            {% endif %}
-                            {% if education.score %}
-                                <p class="entry-description">Nilai: {{ education.score }}</p>
-                            {% endif %}
-                            {% if education.is_ongoing %}
-                                <div class="edu-ongoing">
-                                    <span class="edu-dot"></span>
-                                    Currently studying
-                                </div>
-                            {% endif %}
-
-                            <div class="project-card-actions">
-                                <div class="project-actions">
-                                    {% include "components/education_delete_modal.html" with education=education %}
-                                </div>
-                            </div>
-                        </div>
-                    {% empty %}
-                        {% if query %}
-                            <p class="empty-state empty-state--timeline">Tidak ada riwayat pendidikan dengan nama institusi tersebut.</p>
-                        {% else %}
-                            <p class="empty-state empty-state--timeline">Belum ada riwayat pendidikan yang ditambahkan.</p>
-                        {% endif %}
-                    {% endfor %}
+                    <div id="education-entries"></div>
                 </div>
+
+                <!-- Noscript Fallback for accessibility & server-side compatibility -->
+                <noscript>
+                    <div class="timeline">
+                        {% for education in education_list %}
+                            <div class="entry lit">
+                                <div class="entry-marker">{{ education.started_at|date:"y" }}</div>
+                                <span class="entry-year">
+                                    {{ education.started_at|date:"Y" }} &ndash;
+                                    {% if education.is_ongoing %}present{% else %}{{ education.ended_at|date:"Y" }}{% endif %}
+                                </span>
+                                <div class="entry-role">{{ education.institution_name }}</div>
+                                <div class="entry-org">{{ education.program }}</div>
+                                {% if education.description %}
+                                    <p class="entry-description">{{ education.description }}</p>
+                                {% endif %}
+                                {% if education.score %}
+                                    <p class="entry-description">Nilai: {{ education.score }}</p>
+                                {% endif %}
+                            </div>
+                        {% empty %}
+                            <p class="empty-state empty-state--timeline">Belum ada riwayat pendidikan yang ditambahkan.</p>
+                        {% endfor %}
+                    </div>
+                </noscript>
             </div>
         </section>
-
-        <script>
-            (function(){
-                const track = document.querySelector('#education .timeline');
-                if(!track) return;
-                const fill = document.getElementById('eduTimelineFill');
-                const entries = Array.from(track.querySelectorAll('.entry'));
-
-                function update(){
-                    const rect = track.getBoundingClientRect();
-                    const vh = window.innerHeight;
-                    const progressPx = Math.min(Math.max(vh * 0.7 - rect.top, 0), rect.height);
-                    const pct = rect.height > 0 ? (progressPx / rect.height) * 100 : 0;
-                    if (fill) fill.style.height = pct + '%';
-
-                    entries.forEach(entry => {
-                        const r = entry.getBoundingClientRect();
-                        if(r.top < vh * 0.75){
-                            entry.classList.add('lit');
-                        }
-                    });
-                }
-
-                window.addEventListener('scroll', update, { passive:true });
-                window.addEventListener('resize', update);
-                update();
-            })();
-        </script>
     </main>
+
+    {% if user.is_superuser %}
+        {% include "components/education_form_modal.html" %}
+    {% endif %}
+
+    <script>
+    // Konfigurasi Endpoint & State
+    const BASE_EDUCATION_ENDPOINT = "{% url 'main:get_education_json' %}";
+    const CREATE_EDUCATION_ENDPOINT = "{% url 'main:create_education_ajax' %}";
+    const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
+    const SEARCH_DEBOUNCE_DELAY = 300;
+    let searchDebounceTimer;
+    let educationAbortController;
+
+    // DOM Elements
+    const searchForm = document.getElementById('education-search-form');
+    const searchInput = document.getElementById('education-search-input');
+    const loadingState = document.getElementById('education-loading');
+    const errorState = document.getElementById('education-error');
+    const emptyState = document.getElementById('education-empty');
+    const timelineContainer = document.getElementById('education-timeline');
+    const entriesContainer = document.getElementById('education-entries');
+    const educationForm = document.getElementById('education-form');
+
+    // Menampilkan/menyembunyikan section state
+    function displayEducationSection({ showLoading = false, showError = false, showEmpty = false, showData = false }) {
+        loadingState.classList.toggle('hide', !showLoading);
+        errorState.classList.toggle('hide', !showError);
+        emptyState.classList.toggle('hide', !showEmpty);
+        timelineContainer.classList.toggle('hide', !showData);
+    }
+
+    // Update progress fill timeline berdasarkan posisi scroll
+    function updateTimelineAnimation() {
+        const track = document.querySelector('#education .timeline');
+        if (!track) return;
+        const fill = document.getElementById('eduTimelineFill');
+        const entries = Array.from(track.querySelectorAll('.entry'));
+        const rect = track.getBoundingClientRect();
+        const vh = window.innerHeight;
+        const progressPx = Math.min(Math.max(vh * 0.7 - rect.top, 0), rect.height);
+        const pct = rect.height > 0 ? (progressPx / rect.height) * 100 : 0;
+        if (fill) fill.style.height = pct + '%';
+
+        entries.forEach(entry => {
+            const r = entry.getBoundingClientRect();
+            if (r.top < vh * 0.75) {
+                entry.classList.add('lit');
+            }
+        });
+    }
+
+    // Membangun elemen kartu entri timeline dengan perlindungan XSS (escapeHtml)
+    function buildEducationEntryElement(item) {
+        const edu = item.fields;
+        const eduId = item.pk;
+
+        const startDate = edu.started_at ? new Date(edu.started_at) : null;
+        const endDate = edu.ended_at ? new Date(edu.ended_at) : null;
+        const startYear = startDate && !isNaN(startDate.getFullYear()) ? startDate.getFullYear() : '';
+        const startYearShort = startYear ? String(startYear).slice(-2) : '';
+        const endYear = edu.is_ongoing ? 'present' : (endDate && !isNaN(endDate.getFullYear()) ? endDate.getFullYear() : 'present');
+        const yearRange = startYear ? `${startYear} &ndash; ${endYear}` : '';
+
+        const entryDiv = document.createElement('div');
+        entryDiv.className = 'entry lit';
+
+        const descHtml = edu.description
+            ? `<p class="entry-description">${escapeHtml(edu.description)}</p>`
+            : '';
+        const scoreHtml = (edu.score !== null && edu.score !== undefined && edu.score !== '')
+            ? `<p class="entry-description">Nilai: ${escapeHtml(edu.score)}</p>`
+            : '';
+        const ongoingHtml = edu.is_ongoing
+            ? `<div class="edu-ongoing"><span class="edu-dot"></span>Currently studying</div>`
+            : '';
+
+        const csrfToken = getCookie('csrftoken') || '';
+        const starUrl = "{% url 'main:toggle_star_education' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', eduId);
+        const deleteUrl = "{% url 'main:delete_education' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', eduId);
+
+        const isStarredClass = edu.is_starred ? " is-starred" : "";
+        const starText = edu.is_starred ? "Unstar" : "Star";
+        const starTitle = edu.star_count > 0
+            ? `Dibintangi oleh ${escapeHtml(edu.starred_by_names)}`
+            : "Jadilah yang pertama memberi star";
+
+        const starHtml = `
+            <form method="post" action="${starUrl}" class="star-form">
+                <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                <button type="submit" 
+                        class="button button-star${isStarredClass}"
+                        title="${starTitle}">
+                    <span aria-hidden="true">★</span>
+                    ${starText}
+                    <span class="star-count">${edu.star_count}</span>
+                </button>
+            </form>
+        `;
+
+        const deleteHtml = IS_SUPERUSER
+            ? `<form method="post" action="${deleteUrl}" style="display:inline;">
+                <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                <button type="submit" class="button button-danger" onclick="return confirm('Yakin ingin menghapus riwayat pendidikan ini?');">Hapus</button>
+            </form>`
+            : '';
+
+        entryDiv.innerHTML = `
+            <div class="entry-marker">${escapeHtml(startYearShort)}</div>
+            <span class="entry-year">${yearRange}</span>
+            <div class="entry-role">${escapeHtml(edu.institution_name)}</div>
+            <div class="entry-org">${escapeHtml(edu.program)}</div>
+            ${descHtml}
+            ${scoreHtml}
+            ${ongoingHtml}
+            <div class="project-card-actions">
+                <div class="project-actions">
+                    ${starHtml}
+                    ${deleteHtml}
+                </div>
+            </div>
+        `;
+
+        return entryDiv;
+    }
+
+    // Mengambil data pendidikan melalui AJAX Fetch API
+    async function fetchEducation(searchQuery = "") {
+        if (educationAbortController) {
+            educationAbortController.abort();
+        }
+        educationAbortController = new AbortController();
+
+        try {
+            displayEducationSection({ showLoading: true });
+
+            const url = searchQuery
+                ? `${BASE_EDUCATION_ENDPOINT}?institution_name=${encodeURIComponent(searchQuery)}`
+                : BASE_EDUCATION_ENDPOINT;
+
+            const response = await fetch(url, {
+                headers: { 'Accept': 'application/json' },
+                signal: educationAbortController.signal,
+            });
+
+            if (!response.ok) {
+                throw new Error(`Gagal memuat data (status ${response.status})`);
+            }
+
+            const educationData = await response.json();
+
+            if (educationData.length === 0) {
+                displayEducationSection({ showEmpty: true });
+            } else {
+                entriesContainer.innerHTML = '';
+                educationData.forEach(item => {
+                    entriesContainer.appendChild(buildEducationEntryElement(item));
+                });
+                displayEducationSection({ showData: true });
+                updateTimelineAnimation();
+            }
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+            console.error('Error loading education:', error);
+            displayEducationSection({ showError: true });
+        }
+    }
+
+    // Search event handlers dengan debouncing
+    function searchEducation() {
+        fetchEducation(searchInput ? searchInput.value.trim() : "");
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener("input", function() {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(function() {
+                searchEducation();
+            }, SEARCH_DEBOUNCE_DELAY);
+        });
+    }
+
+    if (searchForm) {
+        searchForm.addEventListener("submit", function(event) {
+            event.preventDefault();
+            clearTimeout(searchDebounceTimer);
+            searchEducation();
+        });
+    }
+
+    // Fungsi menutup modal
+    function closeEducationModal() {
+        const modal = document.getElementById("add-education-modal");
+        if (modal && typeof modal.hidePopover === 'function') {
+            modal.hidePopover();
+        }
+    }
+
+    // Kirim form penambahan pendidikan melalui AJAX
+    async function addEducation(event) {
+        event.preventDefault();
+
+        const submitButton = educationForm.querySelector('button[type="submit"]');
+        if (submitButton) submitButton.disabled = true;
+
+        try {
+            const response = await fetch(CREATE_EDUCATION_ENDPOINT, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                body: new FormData(educationForm),
+            });
+
+            const result = await response.json().catch(() => ({}));
+
+            if (response.ok) {
+                educationForm.reset();
+                closeEducationModal();
+                showToast('Berhasil', 'Riwayat pendidikan berhasil ditambahkan!', 'success');
+                fetchEducation(searchInput ? searchInput.value.trim() : "");
+            } else {
+                const errorMessages = result.errors
+                    ? Object.values(result.errors).flat().map(err => err.message)
+                    : [result.message || `Terjadi kesalahan (status ${response.status}).`];
+                showToast('Gagal menambahkan pendidikan', errorMessages.join(' '), 'error');
+            }
+        } catch (error) {
+            console.error('Error adding education:', error);
+            showToast('Gagal menambahkan pendidikan', 'Tidak dapat terhubung ke server. Silakan coba lagi.', 'error');
+        } finally {
+            if (submitButton) submitButton.disabled = false;
+        }
+    }
+
+    // Pasang listener form tambah hanya jika elemen ada (pemeriksaan elemen untuk superuser)
+    if (educationForm) {
+        educationForm.addEventListener('submit', addEducation);
+    }
+
+    // Event listener scroll & resize untuk animasi timeline
+    window.addEventListener('scroll', updateTimelineAnimation, { passive: true });
+    window.addEventListener('resize', updateTimelineAnimation);
+
+    // Initial load
+    fetchEducation(searchInput ? searchInput.value.trim() : "");
+    </script>
 {% endblock content %}
