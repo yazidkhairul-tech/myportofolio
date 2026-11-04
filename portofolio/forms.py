@@ -107,6 +107,7 @@ class ProjectForm(ModelForm):
             "tech_stack",
             "thumbnail",
             "project_url",
+            "project_image_url",
             "source_url",
             "started_at",
             "is_ongoing",
@@ -124,19 +125,25 @@ class ProjectForm(ModelForm):
             "tech_stack": "Tech Stack",
             "thumbnail": "Gambar/Screenshot",
             "project_url": "Link Demo",
+            "project_image_url": "URL Gambar Proyek",
             "source_url": "Link Source Code",
             "started_at": "Mulai Dikerjakan",
             "is_ongoing": "Masih Berjalan",
             "ended_at": "Selesai Dikerjakan",
             "is_featured": "Tandai sebagai Featured",
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["started_at"].required = False
  
     def clean(self):
         cleaned_data = super().clean()
+        started_at = cleaned_data.get("started_at")
         is_ongoing = cleaned_data.get("is_ongoing")
         ended_at = cleaned_data.get("ended_at")
  
-        if not is_ongoing and not ended_at:
+        if started_at and not is_ongoing and not ended_at:
             self.add_error(
                 "ended_at",
                 "Isi tanggal selesai, atau centang 'Masih Berjalan' jika proyek belum selesai.",
@@ -144,13 +151,13 @@ class ProjectForm(ModelForm):
         return cleaned_data
 
     def clean_title(self):
-        title = strip_tags(self.cleaned_data["title"]).strip()
+        title = strip_tags(self.cleaned_data.get("title", "")).strip()
         if not title:
             raise ValidationError("Nama proyek tidak boleh hanya berisi tag HTML.")
         return title
 
     def clean_tech_stack(self):
-        return strip_tags(self.cleaned_data["tech_stack"]).strip()
+        return strip_tags(self.cleaned_data.get("tech_stack", "")).strip()
 
     def clean_description(self):
-        return strip_tags(self.cleaned_data["description"]).strip()
+        return strip_tags(self.cleaned_data.get("description", "")).strip()

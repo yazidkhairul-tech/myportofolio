@@ -49,17 +49,18 @@ class Education(models.Model):
         return self.ended_at is None
 
 class Project(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=150)
-    description = models.TextField(blank=True)
+    description = models.TextField()
     tech_stack = models.CharField(
         max_length=255,
-        blank=True,
         help_text="Pisahkan setiap teknologi dengan koma, contoh: Django, PostgreSQL, React",
     )
     thumbnail = models.ImageField(upload_to="projects/", blank=True, null=True)
     project_url = models.URLField(blank=True, help_text="Link demo/live project (opsional)")
+    project_image_url = models.URLField(blank=True)
     source_url = models.URLField(blank=True, help_text="Link repository/source code (opsional)")
-    started_at = models.DateField()
+    started_at = models.DateField(blank=True, null=True)
     is_ongoing = models.BooleanField(default=False)
     ended_at = models.DateField(blank=True, null=True)
     is_featured = models.BooleanField(default=False)

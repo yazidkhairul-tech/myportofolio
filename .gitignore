@@ -120,3 +120,9 @@ sftp-config.json
 
 # macOS
 .DS_Store
+
+# Credential files
+db.env.prod
+source.env
+*.env
+*.env.prod
