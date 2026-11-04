@@ -213,8 +213,9 @@ def get_project_json(request):
                     "tech_stack": project.tech_stack,
                     "thumbnail": project.thumbnail.name if project.thumbnail else "",
                     "project_url": project.project_url,
+                    "project_image_url": project.project_image_url,
                     "source_url": project.source_url,
-                    "started_at": project.started_at.isoformat(),
+                    "started_at": project.started_at.isoformat() if project.started_at else None,
                     "ended_at": project.ended_at.isoformat() if project.ended_at else None,
                     "is_ongoing": project.is_ongoing,
                     "is_featured": project.is_featured,
@@ -316,4 +317,3 @@ def create_education_ajax(request):
         )
 
     return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
-
