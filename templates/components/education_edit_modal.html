@@ -1,0 +1,87 @@
+<div id="edit-education-modal"
+     class="project-form-modal"
+     popover="auto"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="edit-education-modal-title">
+    <button type="button"
+            class="project-form-modal__backdrop"
+            popovertarget="edit-education-modal"
+            popovertargetaction="hide"
+            aria-label="Tutup form edit pendidikan"></button>
+
+    <div class="project-form-modal__content">
+        <button type="button"
+                class="project-form-modal__close"
+                popovertarget="edit-education-modal"
+                popovertargetaction="hide"
+                aria-label="Tutup form edit pendidikan">×</button>
+
+        <h2 id="edit-education-modal-title">Edit Riwayat Pendidikan</h2>
+        <form id="edit-education-form" class="project-form">
+            <input type="hidden" id="edit-edu-id" name="id">
+
+            <div class="form-group">
+                <label for="edit-institution-name">Institusi</label>
+                <input type="text"
+                       id="edit-institution-name"
+                       name="institution_name"
+                       required
+                       maxlength="255"
+                       placeholder="Contoh: Universitas Indonesia">
+            </div>
+
+            <div class="form-group">
+                <label for="edit-program">Program / Jurusan</label>
+                <input type="text"
+                       id="edit-program"
+                       name="program"
+                       required
+                       maxlength="255"
+                       placeholder="Contoh: S1 Ilmu Komputer">
+            </div>
+
+            <div class="form-group">
+                <label for="edit-started-at">Tanggal Mulai</label>
+                <input type="datetime-local"
+                       id="edit-started-at"
+                       name="started_at"
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label for="edit-ended-at">Tanggal Selesai (kosongkan jika masih berlangsung)</label>
+                <input type="datetime-local"
+                       id="edit-ended-at"
+                       name="ended_at">
+            </div>
+
+            <div class="form-group">
+                <label for="edit-score">Nilai Akhir (dari 100)</label>
+                <input type="number"
+                       id="edit-score"
+                       name="score"
+                       step="0.01"
+                       min="0"
+                       max="100"
+                       placeholder="Contoh: 88.50">
+            </div>
+
+            <div class="form-group">
+                <label for="edit-description">Deskripsi</label>
+                <textarea id="edit-description"
+                          name="description"
+                          rows="3"
+                          placeholder="Ceritakan pengalaman studimu..."></textarea>
+            </div>
+
+            <div class="project-form-modal__actions">
+                <button type="button"
+                        class="button button-secondary"
+                        popovertarget="edit-education-modal"
+                        popovertargetaction="hide">Batal</button>
+                <button type="submit" class="button" id="edit-edu-submit">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
