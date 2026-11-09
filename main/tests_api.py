@@ -319,3 +319,16 @@ class EducationAPITest(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Education.objects.count(), 2)
+
+    def test_legacy_views_follow_api_rules(self):
+        """Legacy form views must not grant wider access than the API."""
+        create_url = reverse("main:create_education")
+        delete_url = reverse("main:delete_education", args=[self.education.id])
+        for user in (self.visitor, self.editor):
+            self.client.force_login(user)
+            self.assertEqual(self.client.post(create_url, self.payload).status_code, 403)
+            self.assertEqual(self.client.post(delete_url).status_code, 403)
+        self.client.logout()
+        self.assertEqual(self.client.post(delete_url).status_code, 302)  # redirect to login
+        self.assertEqual(Education.objects.count(), 1)
+        self.assertTrue(Education.objects.filter(pk=self.education.id).exists())

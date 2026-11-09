@@ -4,6 +4,35 @@ NPM : 2506537064
 
 Kelas : PBP D
 
+## Tentang Proyek
+
+Website portofolio pribadi berbasis Django. Bagian yang saya kerjakan sendiri adalah **Education** (riwayat pendidikan): CRUD, pencarian, star, peran Editor/pemilik, dan sejak Tugas 6 dilayani lewat REST API (`/api/v1/education/`) dengan Django REST Framework.
+
+## Cara Menjalankan
+
+```bash
+python -m venv env
+env\Scripts\activate          # Windows (Linux/macOS: source env/bin/activate)
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
+python manage.py test main    # menjalankan seluruh test
+```
+
+Endpoint API: `GET/POST /api/v1/education/?search=<kata>`, `GET/PUT/PATCH/DELETE /api/v1/education/<uuid>/`, `POST /api/v1/education/<uuid>/star/`. Browsable API dapat dibuka langsung di browser.
+
+## Progres Mingguan
+
+| Tugas | Fokus |
+|---|---|
+| 1 | Halaman statis HTML/CSS semantik dan responsif |
+| 2 | Model, view, template Django (MVT) |
+| 3 | ModelForm, CSRF, endpoint JSON |
+| 4 | Autentikasi, peran Editor/pemilik, fitur star |
+| 5 | AJAX, debounced search, toast, pencegahan XSS |
+| 6 | REST API dengan DRF, permission class, APITestCase, modal edit via PATCH |
+
 
 
 ### Tugas 1
@@ -128,23 +157,23 @@ Kelas : PBP D
      
      Oleh karena itu, untuk membuktikan secara empiris bahwa pertahanan CSRF benar-benar berfungsi, kita wajib menggunakan `APIClient(enforce_csrf_checks=True)` dan melakukan autentikasi nyata melalui `client.login()`. Pengujian ini memastikan bahwa permintaan sesi tanpa header `HTTP_X_CSRFTOKEN` akan ditolak mentah-mentah dengan status `403 Forbidden`, sedangkan permintaan yang menyertakan token yang valid akan berhasil diproses.
 
+
 ---
 
-### AI Disclosure & Refleksi Teknis
+### AI Disclosure (Tugas 6)
 
-- **Transparansi Penggunaan AI:**
-  Dalam pengerjaan Tugas 6 ini, saya memanfaatkan asisten kecerdasan buatan (*Google Antigravity / Gemini*) sebagai mitra diskusi pemrograman (*pair programmer*) untuk mengeksplorasi integrasi Django REST Framework, merancang arsitektur Permission Class, serta menyusun skema pengujian otomatis yang komprehensif. Strategi prompting yang saya terapkan berfokus pada pendekatan bertahap (*step-by-step modular development*), menetapkan batasan keamanan yang ketat (Zero Trust, perlindungan XSS dan CSRF), serta menuntut pengujian berbasis database state, bukan sekadar respons kode HTTP.
+**Tools:** Google Antigravity (agent AI di IDE) dengan model Gemini dan Claude.
 
-- **Analisis Kritis terhadap Keterbatasan Saran AI:**
-  1. *Perilaku Sanitasi `strip_tags` pada Tag HTML Berisi Teks vs Tag Kosong:*
-     Ketika merancang pengujian validasi input, AI awalnya menyarankan payload uji coba XSS seperti `{"program": "<script>alert(1)</script>"}` dan berasumsi kode tersebut akan langsung memicu `ValidationError` (status 400). Namun setelah saya analisis dan telusuri perilakunya secara mendalam, fungsi `strip_tags` bawaan Django hanya melenyapkan tag pembuka dan penutup `<script>`, sementara teks di dalamnya (`alert(1)`) tetap dipertahankan sebagai teks polos. Akibatnya, serializer menganggap input tersebut valid dan mengembalikan status 201 Created. Saya secara mandiri mengoreksi kasus uji tersebut menggunakan tag kosong tertutup (`<i></i>` atau `<b></b>`) dan whitespace murni, yang terbukti secara akurat menguji validasi teks yang kosong setelah disanitasi.
-  2. *Penanganan Field Tanggal Kosong pada Deserialisasi DRF:*
-     AI awalnya menyarankan pengiriman payload langsung dari `FormData` apa adanya ke endpoint DRF. Namun, input HTML bertipe `<input type="datetime-local">` yang tidak diisi akan mengirimkan string kosong `""`. Pada DRF `DateTimeField(required=False, allow_null=True)`, string kosong dianggap sebagai format datetime yang tidak valid (`ValidationError: Datetime has wrong format`), bukan bernilai `None`. Saya melakukan perbaikan manual pada lapisan JavaScript di template `education.html` untuk menormalisasi nilai kosong pada field opsional (`ended_at` dan `score`) menjadi `null` sebelum diserialisasi ke JSON, sehingga transmisi data berjalan mulus tanpa error 400 palsu.
-  3. *Ilusi Keamanan pada `force_authenticate`:*
-     Pada tahap awal pembuatan test, AI cenderung mengandalkan `force_authenticate` untuk seluruh skenario pengujian. Saya mengidentifikasi keterbatasan ini dan secara manual mengimplementasikan dua pengujian khusus berbasis `APIClient(enforce_csrf_checks=True)` dan `client.login()` untuk membuktikan bahwa pertahanan CSRF pada `SessionAuthentication` benar-benar aktif dan menolak permintaan tanpa token dengan status 403.
+**Strategi prompting:** Saya memberikan dokumen soal Tugas 6 beserta rubriknya ke agent, lalu meminta pengerjaan dibagi per tahap (backend API → integrasi halaman → test → dokumentasi) supaya setiap tahap bisa saya review dan commit terpisah. Untuk setiap tahap saya meminta agent menjalankan `python manage.py test main` sampai semuanya lulus sebelum lanjut.
 
-- **Perbaikan dan Penyesuaian Manual yang Dilakukan:**
-  1. Menambahkan custom `IsPortfolioOwnerOrEditorOrReadOnly` permission class yang secara eksplisit membedakan wewenang antara pengguna biasa, anggota grup *Editor* (hanya diizinkan mutasi via `PUT` dan `PATCH`), serta *Superuser* (pemilik portofolio dengan kendali penuh termasuk `POST` dan `DELETE`).
-  2. Merancang komponen modal interaktif baru `templates/components/education_edit_modal.html` menggunakan Popover API standar modern, yang mendukung pengisian data otomatis (*pre-population*) dan pengiriman mutasi sebagian via `PATCH` secara langsung tanpa me-reload halaman.
-  3. Menambahkan dekorator `@ensure_csrf_cookie` pada view halaman `show_education` serta menyisipkan `{% csrf_token %}` di template agar cookie CSRF selalu siap tersedia untuk dipanggil oleh AJAX `fetch()`.
-  4. Memperluas verifikasi status database (`objects.count()` dan `refresh_from_db()`) pada seluruh pengujian penolakan hak akses dan validasi input di `tests_api.py`.
+**Bagian yang dibantu AI:**
+- Penulisan `EducationSerializer`, permission class `IsPortfolioOwnerOrEditorOrReadOnly`, dan API view `education_list` / `education_detail` / `education_star`.
+- Migrasi `templates/education.html` ke `/api/v1/education/` dan modal edit `templates/components/education_edit_modal.html`.
+- Perluasan test di `main/tests_api.py` (`EducationAPITest`).
+- Draf awal jawaban pertanyaan reflektif, yang kemudian saya baca ulang dan sesuaikan.
+
+**Keterbatasan AI yang ditemukan selama pengerjaan:**
+1. **Asumsi keliru soal `strip_tags`.** Test validasi awal memakai payload `<script>alert(1)</script>` dengan harapan ditolak (400). Ternyata test gagal (201), karena `strip_tags` hanya membuang tag dan menyisakan teks `alert(1)`, sehingga input dianggap valid. Payload diganti menjadi tag kosong (`<i></i>`) yang memang menjadi string kosong setelah disanitasi. Ini menunjukkan output AI tetap harus diverifikasi dengan benar-benar menjalankan test, bukan diasumsikan benar.
+2. **View lama terlewat.** Saat audit akhir terhadap checklist, ditemukan bahwa view lama `create_education` dan `delete_education` sama sekali tidak memeriksa hak akses (pengunjung tanpa login pun bisa menghapus data lewat `POST /education/<id>/delete/`), padahal soal meminta view lama disesuaikan dengan aturan API. Kedua view kemudian dibatasi hanya untuk superuser dan ditambahkan test `test_legacy_views_follow_api_rules`. AI cenderung fokus pada file yang sedang dikerjakan dan tidak otomatis memeriksa jalur lain yang mengakses model yang sama.
+
+**Verifikasi yang saya lakukan:** menjalankan seluruh test (`python manage.py test main`), mencoba halaman Education dengan akun pengunjung, pengguna biasa, Editor, dan superuser, serta membuka Browsable API di `/api/v1/education/`.

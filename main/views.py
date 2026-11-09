@@ -100,7 +100,11 @@ def get_education_json(request):
         )
     return JsonResponse(data, safe=False)
 
+@login_required(login_url="/login/")
 def create_education(request):
+    """Legacy form view; owner-only to stay consistent with the education API."""
+    if not request.user.is_superuser:
+        raise PermissionDenied
     form = EducationForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
@@ -115,7 +119,11 @@ def create_education(request):
 
     return render(request, "education_form.html", context)
 
+@login_required(login_url="/login/")
 def delete_education(request, education_id):
+    """Legacy delete view; owner-only to stay consistent with the education API."""
+    if not request.user.is_superuser:
+        raise PermissionDenied
     education = get_object_or_404(Education, pk=education_id)
 
     if request.method == "POST":
