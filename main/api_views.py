@@ -79,9 +79,18 @@ def project_star(request, project_id):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsPortfolioOwnerOrEditorOrReadOnly])
 def education_list(request):
+    """
+    List all education entries or create a new entry.
+    Supports search query parameter via ?institution_name=, ?search=, or ?q=.
+    """
     if request.method in ("GET", "HEAD"):
         education = Education.objects.prefetch_related("starred_by").order_by("-started_at", "id")
-        query = request.query_params.get("institution_name", "").strip()
+        query = (
+            request.query_params.get("institution_name")
+            or request.query_params.get("search")
+            or request.query_params.get("q")
+            or ""
+        ).strip()
         if query:
             education = education.filter(
                 Q(institution_name__icontains=query) | Q(program__icontains=query)

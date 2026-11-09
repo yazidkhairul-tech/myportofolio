@@ -7,6 +7,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 from portofolio.forms import EducationForm, ProjectForm
 from main.models import Experience, Education, Project
@@ -41,6 +42,7 @@ def show_experience(request):
     return render(request, "experience.html", context)
  
  
+@ensure_csrf_cookie
 def show_education(request):
     title_query = request.GET.get("institution_name", "").strip()
     education = Education.objects.all()
@@ -57,6 +59,7 @@ def show_education(request):
         "query": title_query,
         "title_query": title_query,
         "form": EducationForm(),
+        "is_editor": is_editor(request.user),
     }
     return render(request, "education.html", context)
 
