@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
     {% block meta %} {% endblock meta %}
 </head>
@@ -15,21 +15,24 @@
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
         <div class="blob blob-3"></div>
+        <div class="blob blob-4"></div>
     </div>
     <header class="site-header">
     <div class="container">
-        <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
-        <nav>
-            <a href="{% url 'main:show_main' %}">Profile</a>
-            <a href="{% url 'main:show_experience' %}">Experience</a>
-            <a href="{% url 'main:show_education' %}">Education</a>
-            <a href="{% url 'main:show_projects' %}">Projects</a>
+        <a href="{% url 'main:show_main' %}" class="brand">
+            <span class="brand-dot"></span>{{ name }}
+        </a>
+        <nav class="site-nav">
+            <a href="{% url 'main:show_main' %}" class="nav-link">Profile</a>
+            <a href="{% url 'main:show_experience' %}" class="nav-link">Experience</a>
+            <a href="{% url 'main:show_education' %}" class="nav-link">Education</a>
+            <a href="{% url 'main:show_projects' %}" class="nav-link">Projects</a>
             {% if user.is_authenticated %}
                 <span class="nav-user">{{ user.username }}</span>
-                <a href="{% url 'main:logout' %}">Logout</a>
+                <a href="{% url 'main:logout' %}" class="nav-link nav-link--auth">Logout</a>
             {% else %}
-                <a href="{% url 'main:login' %}">Login</a>
-                <a href="{% url 'main:register' %}">Register</a>
+                <a href="{% url 'main:login' %}" class="nav-link nav-link--auth">Login</a>
+                <a href="{% url 'main:register' %}" class="nav-link nav-link--auth nav-link--cta">Register</a>
             {% endif %}
         </nav>
     </div>

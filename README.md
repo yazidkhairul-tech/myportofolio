@@ -4,6 +4,35 @@ NPM : 2506537064
 
 Kelas : PBP D
 
+## Tentang Proyek
+
+Website portofolio pribadi berbasis Django. Bagian yang saya kerjakan sendiri adalah **Education** (riwayat pendidikan): CRUD, pencarian, star, peran Editor/pemilik, dan sejak Tugas 6 dilayani lewat REST API (`/api/v1/education/`) dengan Django REST Framework.
+
+## Cara Menjalankan
+
+```bash
+python -m venv env
+env\Scripts\activate          # Windows (Linux/macOS: source env/bin/activate)
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
+python manage.py test main    # menjalankan seluruh test
+```
+
+Endpoint API: `GET/POST /api/v1/education/?search=<kata>`, `GET/PUT/PATCH/DELETE /api/v1/education/<uuid>/`, `POST /api/v1/education/<uuid>/star/`. Browsable API dapat dibuka langsung di browser.
+
+## Progres Mingguan
+
+| Tugas | Fokus |
+|---|---|
+| 1 | Halaman statis HTML/CSS semantik dan responsif |
+| 2 | Model, view, template Django (MVT) |
+| 3 | ModelForm, CSRF, endpoint JSON |
+| 4 | Autentikasi, peran Editor/pemilik, fitur star |
+| 5 | AJAX, debounced search, toast, pencegahan XSS |
+| 6 | REST API dengan DRF, permission class, APITestCase, modal edit via PATCH |
+
 
 
 ### Tugas 1
@@ -84,3 +113,67 @@ Kelas : PBP D
    - **Penyisipan manual di JavaScript/DOM tidak memiliki auto-escaping bawaan:** Ketika data diambil lewat AJAX (format JSON), data tersebut murni berupa string teks mentah. Jika pengembang menyisipkannya ke halaman menggunakan properti manipulasi DOM seperti `innerHTML` atau interpolasi template literal (misalnya `element.innerHTML = '<h2>' + data.title + '</h2>'`), browser akan langsung mem-parsing string tersebut sebagai kode HTML murni. Jika data tersebut mengandung payload berbahaya seperti `<img src="x" onerror="alert('XSS!')">`, skrip jahat akan langsung dieksekusi oleh browser. Oleh sebab itu, saat menggunakan AJAX/JavaScript, pengembang wajib secara eksplisit melakukan sanitasi di sisi server (misal dengan `strip_tags` pada ModelForm) serta melakukan *escaping* manual (misal fungsi `escapeHtml()`) atau menggunakan `textContent` di sisi client.
 
 
+
+### Tugas 6
+
+1. **Pengertian REST, mengapa JSON saja belum cukup, serta perbedaan PUT dan PATCH:**
+   - **REST (Representational State Transfer)** adalah gaya arsitektur perangkat lunak (*architectural style*) yang diperkenalkan oleh Roy Fielding untuk merancang sistem terdistribusi dan komunikasi antar-layanan berbasis web. REST menekankan interaksi berbasis *resource* (sumber daya), di mana setiap sumber daya diidentifikasi secara unik melalui URI (seperti `/api/v1/education/`), dimanipulasi melalui representasinya menggunakan metode standar HTTP (GET, POST, PUT, PATCH, DELETE), bersifat nirkeadaan (*stateless*), dapat di-*cache* (*cacheable*), serta memiliki antarmuka yang seragam (*uniform interface*).
+   - **Mengapa mengembalikan JSON saja belum cukup untuk disebut RESTful:** Mengembalikan format JSON hanyalah salah satu pilihan format serialisasi data (*content-type: application/json*). Sebuah API baru dapat disebut RESTful jika mematuhi batasan-batasan arsitektural REST. Sebagai contoh, jika sebuah endpoint URL berupa `/api/delete_education_by_id?id=1` dan dipanggil menggunakan metode `GET` atau `POST` generik lalu mengembalikan `{ "status": "deleted" }`, API tersebut **bukanlah RESTful** meskipun formatnya JSON, karena melanggar prinsip *Uniform Interface* (menggunakan URL berbasis aksi/RPC (*Remote Procedure Call*), bukan sumber daya nomina), menyalahgunakan semantik metode HTTP (GET tidak boleh menimbulkan efek samping mutasi), serta tidak mengembalikan kode status HTTP semantik (seperti `204 No Content` atau `404 Not Found`). RESTful menuntut konsistensi semantik kata kerja HTTP, representasi status yang akurat melalui HTTP Status Codes, dan manipulasi *resource* yang independen.
+   - Perbedaan PUT dan PATCH beserta contoh kasus penggunaannya:
+     - `PUT` (Full Replacement / Penggantian Menyeluruh): Bersifat idempoten. Klien mengirimkan representasi sumber daya secara lengkap dan utuh. Jika ada atribut atau field yang tidak disertakan dalam *payload*, field tersebut akan dianggap dikosongkan (*null*) atau diatur ke nilai *default*-nya, bahkan bisa gagal divalidasi jika field tersebut berstatus *required*.
+       - *Contoh kasus:* Fitur sinkronisasi data formulir profil atau form riwayat pendidikan menyeluruh dari aplikasi eksternal, di mana seluruh field (nama institusi, program, tanggal mulai, tanggal selesai, deskripsi, nilai) dikirimkan ulang secara lengkap untuk menggantikan seluruh baris record yang sudah ada.
+     - `PATCH` (Partial Update / Pembaruan Sebagian): Digunakan untuk memperbarui satu atau beberapa field tertentu saja dari suatu sumber daya tanpa harus mengirimkan kembali seluruh field lainnya. Field yang tidak disertakan dalam *payload* akan tetap mempertahankan nilai aslinya di database.
+       - *Contoh kasus:* Pengguna hanya ingin memperbarui field `score` (nilai akhir) atau mengubah tanggal selesai `ended_at` pada riwayat pendidikan tanpa perlu mengirimkan ulang teks `description`, `institution_name`, dan `started_at` yang panjang.
+
+2. **Peran Serializer pada Django REST Framework dan Keuntungannya dibanding Dictionary Manual `JsonResponse`:**
+   - **Peran Serializer di DRF:**
+     Serializer bertindak sebagai jembatan dua arah (*two-way bridge*) yang sangat krusial dalam DRF:
+     1. **Serialisasi (Output):** Mengonversi struktur data Python kompleks dari Django ORM (objek Model atau QuerySet) menjadi tipe data Python primitif (dictionary, list, string, number) yang dapat dengan mudah dirender ke format JSON/XML via HTTP. Termasuk menyediakan field turunan komputasi dinamis lewat `SerializerMethodField` (seperti `star_count`, status relasi `is_starred`, dan `is_ongoing`).
+     2. **Deserialisasi dan Validasi (Input):** Mengonversi *payload* teks mentah (JSON) dari permintaan HTTP klien kembali menjadi tipe data Python, melakukan sanitasi teks (*strip_tags* terhadap serangan XSS), validasi tipe data dan batasan model (`min_value`, `max_value`, format ISO datetime), validasi tingkat field tunggal (`validate_<field>`), validasi silang antar-field (`validate()`, misalnya memastikan tanggal selesai tidak mendahului tanggal mulai), dan secara otomatis menyimpannya ke database melalui metode `.save()`, `.create()`, atau `.update()`.
+   - **Keuntungan Serializer dibanding merakit dictionary manual dengan `JsonResponse`:**
+     - **Validasi Terstruktur dan Deklaratif:** Pada pendekatan manual `JsonResponse`, pengembang harus menulis puluhan baris validasi manual (`if not request.POST.get('name'): return JsonResponse(...)`), pengecekan tipe data, dan parsing manual yang rentan terlewat. Serializer menangani seluruh aturan validasi deklaratif dan otomatis mengembalikan dictionary error yang terstruktur dengan kode status `400 Bad Request`.
+     - **Reusabilitas dan Modularitas (DRY):** `ModelSerializer` secara otomatis membaca metadata dari model Django (`fields`, tipe kolom, `blank`, `null`), sehingga mengurangi duplikasi kode secara drastis dibanding merakit dictionary manual setiap kali membuat endpoint baru.
+     - **Sanitasi Terpusat:** Logika pembersihan data (seperti pembersihan tag HTML jahat) diletakkan di satu tempat di dalam serializer, menjamin konsistensi baik saat data dibuat (`POST`) maupun diperbarui (`PUT`/`PATCH`).
+     - **Dukungan Built-in DRF:** Terintegrasi langsung dengan fitur canggih DRF seperti Browsable API, pagination, nested relationship, partial updates, dan context request (misalnya mendeteksi user yang sedang login untuk `is_starred`).
+
+3. **Perbedaan Autentikasi vs Otorisasi di DRF dan Alasan Hak Akses Wajib Diperiksa di Server:**
+   - **Perbedaan Autentikasi dan Otorisasi:**
+     - **Autentikasi (*Authentication*):** Proses untuk membuktikan dan mengidentifikasi **siapa pengguna yang mengirim permintaan** (*Who are you?*). DRF memeriksa kredensial (misalnya cookie sesi via `SessionAuthentication` atau Bearer Token) untuk mencocokkan identitas pengguna ke instance `request.user`. Jika kredensial salah atau tidak ada, pengguna dikategorikan sebagai *anonymous/unauthenticated*.
+     - **Otorisasi (*Authorization / Permissions*):** Proses untuk menentukan **apakah pengguna yang identitasnya telah teridentifikasi tersebut memiliki izin untuk melakukan tindakan tertentu pada sumber daya yang diminta** (*What are you allowed to do?*). Misalnya, apakah pengguna tersebut berhak mengubah data (anggota grup *Editor*), menghapus data (*Superuser/Portfolio Owner*), atau hanya boleh membaca data (*Visitor*).
+   - **Mengapa hak akses wajib diperiksa dengan Permission Class di Server, bukan hanya menyembunyikan tombol di Template:**
+     - **Antarmuka Klien (Template/HTML/JS) Berada di Luar Kendali Server:** Menyembunyikan elemen visual tombol (misalnya tombol *Hapus* atau modal *Edit*) di HTML/template hanyalah kemudahan pengalaman pengguna (*UI convenience / security through obscurity*), **bukan mekanisme keamanan sama sekali**.
+     - **Akses Langsung ke Endpoint HTTP:** Penyerang atau pengguna biasa yang paham teknis dapat dengan mudah mengabaikan tampilan HTML dan mengirimkan permintaan HTTP secara langsung ke endpoint API (misalnya menggunakan `curl`, Postman, terminal, skrip Python, atau konsol Fetch di Developer Tools browser).
+     - **Prinsip *Zero Trust* & Validasi Sisi Server:** Jika server tidak memvalidasi hak akses melalui *permission class* (seperti `IsPortfolioOwnerOrEditorOrReadOnly`), siapa pun yang mengirimkan `DELETE /api/v1/education/<uuid>/` akan berhasil menghapus data penting meskipun tombol hapus tidak ditampilkan di antarmuka web mereka. Oleh sebab itu, server harus selalu menjadi benteng pertahanan utama dan terakhir yang memverifikasi setiap hak akses pada setiap transaksi HTTP.
+
+4. **Alasan Permintaan Mutasi Memerlukan Token CSRF saat Memakai `SessionAuthentication` dan Mengapa `force_authenticate` Tidak Cukup:**
+   - **Alasan Permintaan Mutasi Memerlukan Token CSRF pada `SessionAuthentication`:**
+     `SessionAuthentication` di Django mengandalkan *cookie* sesi (`sessionid`) yang disimpan oleh peramban pengguna. Masalah keamanan fundamental dari *cookie* berbasis peramban adalah sifatnya yang otomatis disertakan oleh browser (*ambient authority*) pada setiap permintaan yang ditujukan ke domain server tersebut, bahkan jika permintaan tersebut dipicu dari situs web jahat pihak ketiga (*cross-site*), misalnya melalui form tersembunyi atau skrip JavaScript jahat di situs lain saat pengguna masih dalam keadaan login di aplikasi portofolio. Ini adalah celah serangan **Cross-Site Request Forgery (CSRF)**.
+     
+     Untuk menggagalkan serangan ini, Django dan DRF mewajibkan *token rahasia yang tidak dapat diprediksi* (*CSRF Token*) yang dikirimkan melalui header kustom `X-CSRFToken` pada setiap permintaan yang melakukan mutasi data (POST, PUT, PATCH, DELETE). Karena situs web pihak ketiga tidak dapat membaca nilai cookie domain lain (akibat *Same-Origin Policy*), penyerang tidak dapat menyertakan header `X-CSRFToken` yang valid, sehingga peramban dan server berhasil menggagalkan upaya eksploitasi tersebut.
+   - **Mengapa Test dengan `force_authenticate` Tidak Cukup untuk Membuktikan Perlindungan CSRF:**
+     `force_authenticate(user=...)` pada DRF `APITestCase` dirancang sebagai alat bantu pengujian unit untuk *mocking* atau memintas (*bypass*) seluruh lapisan autentikasi HTTP, *middleware*, dan pengecekan CSRF standar demi menguji logika bisnis izin (*permissions*) secara terisolasi dan cepat.
+     
+     Saat kita menggunakan `force_authenticate`, objek `request.user` langsung disuntikkan secara artifisial ke dalam request tanpa melalui pipeline autentikasi Django biasa, dan secara default DRF mematikan verifikasi CSRF. Akibatnya, pengujian yang memakai `force_authenticate` **sama sekali tidak memverifikasi apakah middleware CSRF aktif, apakah token CSRF divalidasi dengan benar, atau apakah permintaan tanpa token akan ditolak**.
+     
+     Oleh karena itu, untuk membuktikan secara empiris bahwa pertahanan CSRF benar-benar berfungsi, kita wajib menggunakan `APIClient(enforce_csrf_checks=True)` dan melakukan autentikasi nyata melalui `client.login()`. Pengujian ini memastikan bahwa permintaan sesi tanpa header `HTTP_X_CSRFTOKEN` akan ditolak mentah-mentah dengan status `403 Forbidden`, sedangkan permintaan yang menyertakan token yang valid akan berhasil diproses.
+
+
+---
+
+### AI Disclosure (Tugas 6)
+
+**Tools:** Google Antigravity (agent AI di IDE) dengan model Gemini dan Claude.
+
+**Strategi prompting:** Saya memberikan dokumen soal Tugas 6 beserta rubriknya ke agent, lalu meminta pengerjaan dibagi per tahap (backend API → integrasi halaman → test → dokumentasi) supaya setiap tahap bisa saya review dan commit terpisah. Untuk setiap tahap saya meminta agent menjalankan `python manage.py test main` sampai semuanya lulus sebelum lanjut.
+
+**Bagian yang dibantu AI:**
+- Penulisan `EducationSerializer`, permission class `IsPortfolioOwnerOrEditorOrReadOnly`, dan API view `education_list` / `education_detail` / `education_star`.
+- Migrasi `templates/education.html` ke `/api/v1/education/` dan modal edit `templates/components/education_edit_modal.html`.
+- Perluasan test di `main/tests_api.py` (`EducationAPITest`).
+- Draf awal jawaban pertanyaan reflektif, yang kemudian saya baca ulang dan sesuaikan.
+
+**Keterbatasan AI yang ditemukan selama pengerjaan:**
+1. **Asumsi keliru soal `strip_tags`.** Test validasi awal memakai payload `<script>alert(1)</script>` dengan harapan ditolak (400). Ternyata test gagal (201), karena `strip_tags` hanya membuang tag dan menyisakan teks `alert(1)`, sehingga input dianggap valid. Payload diganti menjadi tag kosong (`<i></i>`) yang memang menjadi string kosong setelah disanitasi. Ini menunjukkan output AI tetap harus diverifikasi dengan benar-benar menjalankan test, bukan diasumsikan benar.
+2. **View lama terlewat.** Saat audit akhir terhadap checklist, ditemukan bahwa view lama `create_education` dan `delete_education` sama sekali tidak memeriksa hak akses (pengunjung tanpa login pun bisa menghapus data lewat `POST /education/<id>/delete/`), padahal soal meminta view lama disesuaikan dengan aturan API. Kedua view kemudian dibatasi hanya untuk superuser dan ditambahkan test `test_legacy_views_follow_api_rules`. AI cenderung fokus pada file yang sedang dikerjakan dan tidak otomatis memeriksa jalur lain yang mengakses model yang sama.
+
+**Verifikasi yang saya lakukan:** menjalankan seluruh test (`python manage.py test main`), mencoba halaman Education dengan akun pengunjung, pengguna biasa, Editor, dan superuser, serta membuka Browsable API di `/api/v1/education/`.

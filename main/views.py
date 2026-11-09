@@ -7,6 +7,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 from portofolio.forms import EducationForm, ProjectForm
 from main.models import Experience, Education, Project
@@ -41,6 +42,7 @@ def show_experience(request):
     return render(request, "experience.html", context)
  
  
+@ensure_csrf_cookie
 def show_education(request):
     title_query = request.GET.get("institution_name", "").strip()
     education = Education.objects.all()
@@ -57,6 +59,7 @@ def show_education(request):
         "query": title_query,
         "title_query": title_query,
         "form": EducationForm(),
+        "is_editor": is_editor(request.user),
     }
     return render(request, "education.html", context)
 
@@ -97,7 +100,11 @@ def get_education_json(request):
         )
     return JsonResponse(data, safe=False)
 
+@login_required(login_url="/login/")
 def create_education(request):
+    """Legacy form view; owner-only to stay consistent with the education API."""
+    if not request.user.is_superuser:
+        raise PermissionDenied
     form = EducationForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
@@ -112,7 +119,11 @@ def create_education(request):
 
     return render(request, "education_form.html", context)
 
+@login_required(login_url="/login/")
 def delete_education(request, education_id):
+    """Legacy delete view; owner-only to stay consistent with the education API."""
+    if not request.user.is_superuser:
+        raise PermissionDenied
     education = get_object_or_404(Education, pk=education_id)
 
     if request.method == "POST":

@@ -6,23 +6,27 @@
     <main>
         <section class="experience-section">
             <div class="container">
-                <h1>Add New Education</h1>
-                <form method="post"
-                      action="{% url 'main:create_education' %}"
-                      class="education-form">
-                    {% csrf_token %}
-                    {% for field in form %}
-                        <div class="form-group">
-                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                            {{ field }}
-                            {% for error in field.errors %}
-                                <p class="form-error">{{ error }}</p>
-                            {% endfor %}
+                <div class="form-card-wrapper">
+                    <h1>Add New Education</h1>
+                    <form method="post"
+                          action="{% url 'main:create_education' %}"
+                          class="education-form">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="form-group">
+                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                {{ field }}
+                                {% for error in field.errors %}
+                                    <p class="form-error">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                        <div class="project-form-actions">
+                            <a href="{% url 'main:show_education' %}" class="button button-secondary">Batal</a>
+                            <button type="submit" class="button">Tambah Education</button>
                         </div>
-                    {% endfor %}
-                    <button type="submit" class="button">Tambah Education</button>
-                    <a href="{% url 'main:show_education' %}" class="button button-secondary">Batal</a>
-                </form>
+                    </form>
+                </div>
             </div>
         </section>
     </main>
