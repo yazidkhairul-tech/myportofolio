@@ -4,12 +4,14 @@
   <section class="hero" id="profile">
     <div class="container hero-grid">
       <div class="hero-identity">
-        <p class="hero-kicker">Computer Science &middot; Universitas Indonesia</p>
+        <p class="hero-kicker"><span class="kicker-pulse"></span>Computer Science &middot; Universitas Indonesia</p>
         <h1>{{ name }}</h1>
       </div>
       <div class="hero-photo">
-        <div class="photo-block"></div>
-        <img class="avatar" src="/static/img/yazid.jpeg" alt="Photo of {{ name }}">
+        <div class="photo-block">
+          <img class="avatar" src="/static/img/yazid.jpeg" alt="Photo of {{ name }}">
+          <div class="photo-glow" aria-hidden="true"></div>
+        </div>
       </div>
       <div class="hero-details">
         <p class="bio">{{ bio }}</p>
@@ -18,19 +20,19 @@
             <dt>NPM</dt>
             <dd>{{ npm }}</dd>
           </div>
-            <div class="meta-row">
-                <dt>Program</dt>
-                <dd>{{ study_program }}</dd>
-            </div>
-            <div class="meta-row">
-                <dt>Sesi Terakhir Login</dt>
-                <dd>{{ last_login }}</dd>
-            </div>
+          <div class="meta-row">
+            <dt>Program</dt>
+            <dd>{{ study_program }}</dd>
+          </div>
+          <div class="meta-row">
+            <dt>Sesi Terakhir Login</dt>
+            <dd>{{ last_login }}</dd>
+          </div>
         </dl>
         <div class="social-links">
-          <a href="https://github.com/yazidkhairul-tech" class="social-link">GitHub</a>
-          <a href="https://www.linkedin.com/in/yazid-firmansyah-y211206/" class="social-link">LinkedIn</a>
-          <a href="mailto:firmansyahyazid1@gmail.com" class="social-link">Email</a>
+          <a href="https://github.com/yazidkhairul-tech" target="_blank" rel="noopener noreferrer" class="social-link"><span>GitHub</span><span class="link-arrow">&nearr;</span></a>
+          <a href="https://www.linkedin.com/in/yazid-firmansyah-y211206/" target="_blank" rel="noopener noreferrer" class="social-link"><span>LinkedIn</span><span class="link-arrow">&nearr;</span></a>
+          <a href="mailto:firmansyahyazid1@gmail.com" class="social-link"><span>Email</span><span class="link-arrow">&nearr;</span></a>
         </div>
       </div>
     </div>
@@ -133,67 +135,60 @@
       </div>
     </div>
   </section>
+
+  <script>
+    const scoreEls = document.querySelectorAll('.edu-score');
+    const scoreDone = new WeakSet();
+
+    function animateScore(){
+      scoreEls.forEach(scoreEl => {
+        if(scoreDone.has(scoreEl)) return;
+        const rect = scoreEl.getBoundingClientRect();
+        if(rect.top < window.innerHeight * 0.85){
+          scoreDone.add(scoreEl);
+          const target = parseFloat(scoreEl.dataset.target);
+          if(isNaN(target)) return;
+          const duration = 1000;
+          const start = performance.now();
+          function frame(now){
+            const t = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - t, 3);
+            scoreEl.textContent = (target * eased).toFixed(2);
+            if(t < 1) requestAnimationFrame(frame);
+          }
+          requestAnimationFrame(frame);
+        }
+      });
+    }
+
+    const entries = Array.from(document.querySelectorAll('.entry'));
+    const fill = document.getElementById('timelineFill');
+    const track = document.querySelector('.timeline');
+
+    function update(){
+      if(!track || !fill) return;
+      const rect = track.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const progressPx = Math.min(Math.max(vh * 0.7 - rect.top, 0), rect.height);
+      const pct = rect.height > 0 ? (progressPx / rect.height) * 100 : 0;
+      fill.style.height = pct + '%';
+
+      entries.forEach(entry => {
+        const r = entry.getBoundingClientRect();
+        if(r.top < vh * 0.75){
+          entry.classList.add('lit');
+        }
+      });
+    }
+
+    function onScroll(){
+      update();
+      animateScore();
+    }
+
+    window.addEventListener('scroll', onScroll, { passive:true });
+    window.addEventListener('resize', onScroll);
+    onScroll();
+  </script>
 </main>
 {% endblock content %}
-
-<footer class="site-footer">
-  <div class="container">
-    <p>&copy; 2026 {{ name }}. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
-  </div>
-</footer>
-
-<script>
-  const scoreEls = document.querySelectorAll('.edu-score');
-  const scoreDone = new WeakSet();
-
-  function animateScore(){
-    scoreEls.forEach(scoreEl => {
-      if(scoreDone.has(scoreEl)) return;
-      const rect = scoreEl.getBoundingClientRect();
-      if(rect.top < window.innerHeight * 0.85){
-        scoreDone.add(scoreEl);
-        const target = parseFloat(scoreEl.dataset.target);
-        const duration = 900;
-        const start = performance.now();
-        function frame(now){
-          const t = Math.min((now - start) / duration, 1);
-          const eased = 1 - Math.pow(1 - t, 3);
-          scoreEl.textContent = (target * eased).toFixed(2);
-          if(t < 1) requestAnimationFrame(frame);
-        }
-        requestAnimationFrame(frame);
-      }
-    });
-  }
-
-  const entries = Array.from(document.querySelectorAll('.entry'));
-  const fill = document.getElementById('timelineFill');
-  const track = document.querySelector('.timeline');
-
-  function update(){
-    const rect = track.getBoundingClientRect();
-    const vh = window.innerHeight;
-    const progressPx = Math.min(Math.max(vh * 0.7 - rect.top, 0), rect.height);
-    const pct = rect.height > 0 ? (progressPx / rect.height) * 100 : 0;
-    fill.style.height = pct + '%';
-
-    entries.forEach(entry => {
-      const r = entry.getBoundingClientRect();
-      if(r.top < vh * 0.75){
-        entry.classList.add('lit');
-      }
-    });
-  }
-
-  function onScroll(){
-    update();
-    animateScore();
-  }
-
-  window.addEventListener('scroll', onScroll, { passive:true });
-  window.addEventListener('resize', onScroll);
-  onScroll();
-</script>
-
-</body>
-</html>

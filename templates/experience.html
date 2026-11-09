@@ -1,36 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{ name }} - Portofolio</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-
-<div class="bg-animate" aria-hidden="true">
-  <span class="blob blob-1"></span>
-  <span class="blob blob-2"></span>
-  <span class="blob blob-3"></span>
-</div>
-
-<header class="site-header">
-  <div class="container">
-    <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
-    <nav>
-      <a href="{% url 'main:show_main' %}">Profile</a>
-      <a href="{% url 'main:show_experience' %}">Experience</a>
-      <a href="{% url 'main:show_education' %}">Education</a>
-    </nav>
-  </div>
-</header>
-
+{% extends "base.html" %}
+{% block meta %}
+    <title>Experience - {{ name }}</title>
+{% endblock meta %}
+{% block content %}
 <main>
   <section class="experience" id="experience">
     <div class="container">
+      <p class="section-kicker">Perjalanan &amp; Jejak Langkah Karir</p>
       <div class="section-head">
         <h2>Experience</h2>
         <p>A few roles where I led teams and managed projects end to end.</p>
@@ -63,39 +39,31 @@
       </div>
     </div>
   </section>
+
+  <script>
+    const entries = Array.from(document.querySelectorAll('.entry'));
+    const fill = document.getElementById('timelineFill');
+    const track = document.querySelector('.timeline');
+
+    function update(){
+      if(!track || !fill) return;
+      const rect = track.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const progressPx = Math.min(Math.max(vh * 0.7 - rect.top, 0), rect.height);
+      const pct = rect.height > 0 ? (progressPx / rect.height) * 100 : 0;
+      fill.style.height = pct + '%';
+
+      entries.forEach(entry => {
+        const r = entry.getBoundingClientRect();
+        if(r.top < vh * 0.75){
+          entry.classList.add('lit');
+        }
+      });
+    }
+
+    window.addEventListener('scroll', update, { passive:true });
+    window.addEventListener('resize', update);
+    update();
+  </script>
 </main>
-
-<footer class="site-footer">
-  <div class="container">
-    <p>&copy; 2026 {{ name }}. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
-  </div>
-</footer>
-
-<script>
-  const entries = Array.from(document.querySelectorAll('.entry'));
-  const fill = document.getElementById('timelineFill');
-  const track = document.querySelector('.timeline');
-
-  function update(){
-    if(!track) return;
-    const rect = track.getBoundingClientRect();
-    const vh = window.innerHeight;
-    const progressPx = Math.min(Math.max(vh * 0.7 - rect.top, 0), rect.height);
-    const pct = rect.height > 0 ? (progressPx / rect.height) * 100 : 0;
-    if(fill) fill.style.height = pct + '%';
-
-    entries.forEach(entry => {
-      const r = entry.getBoundingClientRect();
-      if(r.top < vh * 0.75){
-        entry.classList.add('lit');
-      }
-    });
-  }
-
-  window.addEventListener('scroll', update, { passive:true });
-  window.addEventListener('resize', update);
-  update();
-</script>
-
-</body>
-</html>
+{% endblock content %}
